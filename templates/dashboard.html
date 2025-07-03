@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Water Intake Tracker{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Progress Card -->
+    <div class="col-md-8 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-chart-line me-2"></i>Today's Progress
+                </h5>
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <div class="progress mb-3" style="height: 20px;">
+                            <div class="progress-bar bg-info" role="progressbar" 
+                                 style="width: {{ progress_percentage }}%">
+                                {{ "%.0f"|format(progress_percentage) }}%
+                            </div>
+                        </div>
+                        <p class="mb-0">
+                            <strong>{{ total_today }}ml</strong> of {{ daily_goal }}ml goal
+                        </p>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <i class="fas fa-tint" style="font-size: 3rem; color: #17a2b8;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Log Card -->
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-plus-circle me-2"></i>Quick Log
+                </h5>
+                <form method="POST" action="{{ url_for('log_water') }}">
+                    <div class="mb-3">
+                        <label for="amount" class="form-label">Amount (ml)</label>
+                        <select class="form-select" name="amount" required>
+                            <option value="250">250ml - Glass</option>
+                            <option value="500">500ml - Bottle</option>
+                            <option value="750">750ml - Large Bottle</option>
+                            <option value="1000">1000ml - Liter</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes (optional)</label>
+                        <input type="text" class="form-control" name="notes" placeholder="e.g., with meal">
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-tint me-2"></i>Log Water
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart and Recent Logs -->
+<div class="row">
+    <div class="col-md-8 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-chart-bar me-2"></i>Weekly Overview
+                </h5>
+                <canvas id="waterChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-history me-2"></i>Recent Logs
+                </h5>
+                {% if logs %}
+                    <div class="list-group list-group-flush">
+                        {% for log in logs[-5:] %}
+                        <div class="list-group-item border-0 px-0">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ log.amount }}ml</strong>
+                                    {% if log.notes %}
+                                        <br><small class="text-muted">{{ log.notes }}</small>
+                                    {% endif %}
+                                </div>
+                                <small class="text-muted">
+                                    {{ log.timestamp.strftime('%H:%M') }}
+                                </small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">No logs today yet. Start tracking!</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Fetch water data and create chart
+fetch('/api/water_data')
+    .then(response => response.json())
+    .then(data => {
+        const ctx = document.getElementById('waterChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.map(d => {
+                    const date = new Date(d.date);
+                    return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                }),
+                datasets: [{
+                    label: 'Water Intake (ml)',
+                    data: data.map(d => d.amount),
+                    backgroundColor: 'rgba(23, 162, 184, 0.8)',
+                    borderColor: 'rgba(23, 162, 184, 1)',
+                    borderWidth: 1,
+                    borderRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Amount (ml)'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    })
+    .catch(error => console.error('Error fetching water data:', error));
+</script>
+{% endblock %}
