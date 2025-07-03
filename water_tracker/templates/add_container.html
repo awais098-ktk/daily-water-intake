@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Container - HydroMate{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">Add New Container</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('add_container') }}" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Container Name</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                        <div class="form-text">Give your container a descriptive name (e.g., "Blue Water Bottle", "Coffee Mug")</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="volume" class="form-label">Volume (ml)</label>
+                        <input type="number" class="form-control" id="volume" name="volume" min="1" required>
+                        <div class="form-text">How many milliliters does this container hold?</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="drink_type_id" class="form-label">Drink Type</label>
+                        <select class="form-select" id="drink_type_id" name="drink_type_id">
+                            {% for drink_type in drink_types %}
+                            <option value="{{ drink_type.id }}">{{ drink_type.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Select the type of drink for this container</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="container_image" class="form-label">Container Image</label>
+                        <input type="file" class="form-control" id="container_image" name="container_image" accept="image/*">
+                        <div class="form-text">Upload a clear photo of your container for easy recognition</div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">Save Container</button>
+                        <a href="{{ url_for('containers') }}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

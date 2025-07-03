@@ -1,0 +1,32 @@
+Water Intake Tracker Database Export
+==================================================
+
+Export Date: 2025-06-28 14:04:17
+Database File: water_tracker_db_20250628_140417.db
+Total Records: 306
+
+Tables and Record Counts:
+  - drink_type: 7 records
+  - user: 6 records
+  - container: 11 records
+  - water_log: 186 records
+  - wearable_connections: 6 records
+  - activity_data: 19 records
+  - hydration_recommendations: 0 records
+  - food_categories: 10 records
+  - nutrition_goals: 1 records
+  - meal_containers: 4 records
+  - food_items: 27 records
+  - meal_container_items: 0 records
+  - meal_logs: 29 records
+
+How to Use:
+1. Download a SQLite browser like DB Browser for SQLite
+2. Open the .db file in your SQLite browser
+3. Browse tables, run queries, and analyze data
+
+Recommended SQLite Browsers:
+- DB Browser for SQLite (https://sqlitebrowser.org/)
+- SQLite Studio (https://sqlitestudio.pl/)
+- DBeaver (https://dbeaver.io/)
+- SQLiteOnline (https://sqliteonline.com/)

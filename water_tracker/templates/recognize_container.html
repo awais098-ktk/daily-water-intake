@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+
+{% block title %}Recognize Container - HydroMate{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">Smart Container Recognition</h4>
+            </div>
+            <div class="card-body">
+                <p class="lead">Take a photo of your container, and we'll try to recognize it!</p>
+
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> For best results:
+                    <ul>
+                        <li>Make sure the container is well-lit</li>
+                        <li>Position the container against a plain background</li>
+                        <li>Try to capture the container from the same angle as when you calibrated it</li>
+                    </ul>
+                </div>
+
+                <form method="POST" action="{{ url_for('recognize_container') }}" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="container_image" class="form-label">Container Image</label>
+                        <input type="file" class="form-control" id="container_image" name="container_image" accept="image/*" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="use_camera" onchange="toggleCamera()">
+                            <label class="form-check-label" for="use_camera">
+                                Use Camera
+                            </label>
+                        </div>
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="checkbox" id="demo_recognize" name="demo_recognize" value="true">
+                            <label class="form-check-label" for="demo_recognize">
+                                Demo Mode (Always recognize a container)
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="camera_container" style="display: none;" class="mb-3">
+                        <div class="text-center">
+                            <video id="video" width="100%" height="auto" autoplay></video>
+                            <canvas id="canvas" style="display: none;"></canvas>
+                            <button type="button" id="capture_btn" class="btn btn-primary mt-2">
+                                <i class="bi bi-camera"></i> Capture Photo
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">Recognize Container</button>
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let video = document.getElementById('video');
+    let canvas = document.getElementById('canvas');
+    let captureButton = document.getElementById('capture_btn');
+    let fileInput = document.getElementById('container_image');
+    let stream = null;
+
+    function toggleCamera() {
+        let useCamera = document.getElementById('use_camera').checked;
+        let cameraContainer = document.getElementById('camera_container');
+
+        if (useCamera) {
+            cameraContainer.style.display = 'block';
+            startCamera();
+        } else {
+            cameraContainer.style.display = 'none';
+            stopCamera();
+        }
+    }
+
+    function startCamera() {
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(function(s) {
+                    stream = s;
+                    video.srcObject = stream;
+                })
+                .catch(function(error) {
+                    console.error("Camera error:", error);
+                    alert("Could not access camera. Please check permissions.");
+                    document.getElementById('use_camera').checked = false;
+                    toggleCamera();
+                });
+        } else {
+            alert("Your browser doesn't support camera access");
+            document.getElementById('use_camera').checked = false;
+            toggleCamera();
+        }
+    }
+
+    function stopCamera() {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+            video.srcObject = null;
+        }
+    }
+
+    captureButton.addEventListener('click', function() {
+        let context = canvas.getContext('2d');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        // Convert canvas to file
+        canvas.toBlob(function(blob) {
+            let file = new File([blob], "camera_capture.jpg", { type: "image/jpeg" });
+
+            // Create a FileList-like object
+            let dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            fileInput.files = dataTransfer.files;
+
+            // Show success message
+            alert("Photo captured successfully!");
+        }, 'image/jpeg');
+    });
+
+    // Stop camera when leaving the page
+    window.addEventListener('beforeunload', stopCamera);
+</script>
+{% endblock %}

@@ -1,0 +1,495 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - HydroMate{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Dashboard specific styles */
+    .dashboard-card {
+        margin-bottom: 15px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .card-header {
+        padding: 0.5rem 1rem;
+    }
+    
+    .card-body {
+        padding: 0.75rem;
+    }
+    
+    .progress {
+        height: 20px;
+    }
+    
+    .feature-card {
+        transition: transform 0.2s;
+    }
+    
+    .feature-card:hover {
+        transform: translateY(-3px);
+    }
+    
+    .feature-icon {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .drink-type-badge {
+        display: inline-block;
+        padding: 3px 8px;
+        margin: 3px;
+        border-radius: 12px;
+        color: white;
+        font-weight: bold;
+        font-size: 0.85rem;
+    }
+    
+    .container-img {
+        max-height: 80px;
+        object-fit: contain;
+    }
+    
+    .container-placeholder {
+        height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #f8f9fa;
+    }
+    
+    .notification-banner {
+        display: none;
+        background-color: var(--accent-color);
+        color: white;
+        padding: 10px;
+        border-radius: 5px;
+        margin-bottom: 15px;
+    }
+    
+    /* Compact layout */
+    .compact-text {
+        font-size: 0.9rem;
+    }
+    
+    .compact-heading {
+        font-size: 1.1rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    /* Weather widget */
+    .weather-widget-header {
+        padding: 0.5rem;
+    }
+    
+    .weather-widget-body {
+        padding: 0.75rem;
+    }
+    
+    /* Mobile optimizations */
+    @media (max-width: 768px) {
+        .card-header h5 {
+            font-size: 1rem;
+        }
+        
+        h4 {
+            font-size: 1.2rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Notification Banner -->
+<div id="notificationBanner" class="notification-banner">
+    <div class="d-flex justify-content-between align-items-center">
+        <div><i class="bi bi-bell"></i> Enable notifications to receive hydration reminders</div>
+        <button class="btn btn-sm btn-light" onclick="requestNotificationPermission()">Enable</button>
+    </div>
+</div>
+
+<!-- Welcome Header -->
+<div class="row mb-3 align-items-center">
+    <div class="col-md-6">
+        <h2 class="mb-1">Welcome, {{ current_user.username }}!</h2>
+        <p class="text-muted">Track your water intake and stay hydrated.</p>
+    </div>
+    <div class="col-md-6 text-md-end">
+        <div class="input-group" style="max-width: 300px; margin-left: auto;">
+            <input type="text" class="form-control form-control-sm" id="city-input" value="New York" placeholder="City name">
+            <button class="btn btn-sm btn-primary location-btn" title="Get Location">
+                <i class="bi bi-geo-alt"></i>
+            </button>
+            <button class="btn btn-sm btn-primary refresh-weather" title="Refresh Weather">
+                <i class="bi bi-arrow-clockwise"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="row">
+    <!-- Left Column -->
+    <div class="col-lg-8">
+        <!-- Today's Progress -->
+        <div class="card dashboard-card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Today's Progress</h5>
+            </div>
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <h4 class="mb-2">{{ today_total }} ml / {{ daily_goal }} ml</h4>
+                        <div class="progress mb-2">
+                            <div class="progress-bar" role="progressbar" style="width: {{ progress }}%;" 
+                                 aria-valuenow="{{ progress }}" aria-valuemin="0" aria-valuemax="100">
+                                {{ progress|round }}%
+                            </div>
+                        </div>
+                        <input type="hidden" id="progress-value" value="{{ progress }}">
+                    </div>
+                    
+                    {% if drink_labels %}
+                    <div class="col-md-6">
+                        <h5 class="compact-heading">Drink Types</h5>
+                        <div class="mb-2">
+                            {% for label in drink_labels %}
+                            <span class="drink-type-badge {% if label == 'Milk' %}drink-type-milk{% endif %}" 
+                                  style="background-color: {{ drink_colors[loop.index0] }}">
+                                {{ label }}: {{ drink_data[loop.index0] }} ml
+                            </span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                {% if drink_labels %}
+                <div style="height: 180px; position: relative;">
+                    <canvas id="drinkTypeChart"></canvas>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Smart Features -->
+        <div class="card dashboard-card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Smart Features</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-2">
+                    <div class="col-md-4">
+                        <div class="card h-100 feature-card">
+                            <div class="card-body p-2 text-center">
+                                <div class="feature-icon text-primary">
+                                    <i class="bi bi-plus-circle"></i>
+                                </div>
+                                <h6 class="mb-1">Add Container</h6>
+                                <p class="small mb-2">Add a container to log drinks</p>
+                                <a href="{{ url_for('add_container') }}" class="btn btn-sm btn-primary w-100">
+                                    <i class="bi bi-plus-circle"></i> Add Container
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="card h-100 feature-card {% if not ocr_available %}bg-light{% endif %}">
+                            <div class="card-body p-2 text-center">
+                                <div class="feature-icon {% if ocr_available %}text-primary{% else %}text-secondary{% endif %}">
+                                    <i class="bi bi-file-text"></i>
+                                </div>
+                                <h6 class="mb-1">Label Reading</h6>
+                                <p class="small mb-2">{% if ocr_available %}Scan bottle labels{% else %}Requires Tesseract OCR{% endif %}</p>
+                                {% if ocr_available %}
+                                <a href="{{ url_for('read_label') }}" class="btn btn-sm btn-primary w-100">
+                                    <i class="bi bi-file-text"></i> Read Label
+                                </a>
+                                {% else %}
+                                <button class="btn btn-sm btn-secondary w-100" disabled>
+                                    <i class="bi bi-file-text"></i> Not Available
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="card h-100 feature-card {% if not voice_recognition_available %}bg-light{% endif %}">
+                            <div class="card-body p-2 text-center">
+                                <div class="feature-icon {% if voice_recognition_available %}text-primary{% else %}text-secondary{% endif %}">
+                                    <i class="bi bi-mic{% if voice_recognition_available %}-fill{% endif %}"></i>
+                                </div>
+                                <h6 class="mb-1">Voice Input</h6>
+                                <p class="small mb-2">{% if voice_recognition_available %}Log intake using voice{% else %}Requires SpeechRecognition{% endif %}</p>
+                                {% if voice_recognition_available %}
+                                <a href="{{ url_for('voice_n8n') }}" class="btn btn-sm btn-primary w-100">
+                                    <i class="bi bi-mic-fill"></i> Voice Input
+                                </a>
+                                {% else %}
+                                <button class="btn btn-sm btn-secondary w-100" disabled>
+                                    <i class="bi bi-mic"></i> Not Available
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- My Containers -->
+        {% if containers %}
+        <div class="card dashboard-card">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">My Containers</h5>
+                <a href="{{ url_for('containers') }}" class="btn btn-sm btn-light">View All</a>
+            </div>
+            <div class="card-body">
+                <div class="row g-2">
+                    {% for container in containers[:3] %}
+                    <div class="col-md-4">
+                        <div class="card h-100">
+                            <div class="row g-0">
+                                <div class="col-4 d-flex align-items-center justify-content-center p-2">
+                                    {% if container.image_path %}
+                                        {% if 'pepsi' in container.name|lower %}
+                                            <img src="{{ url_for('static', filename='uploads/containers/pepsi_can.png') }}" 
+                                                 class="container-img" alt="{{ container.name }}">
+                                        {% else %}
+                                            <img src="{{ url_for('static', filename=container.image_path) }}" 
+                                                 class="container-img" alt="{{ container.name }}">
+                                        {% endif %}
+                                    {% else %}
+                                    <div class="container-placeholder">
+                                        <i class="bi bi-cup-fill fs-3"></i>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-8">
+                                    <div class="card-body p-2">
+                                        <h6 class="mb-1">{{ container.name }}</h6>
+                                        <p class="small mb-2">{{ container.volume }} ml</p>
+                                        <form method="POST" action="{{ url_for('log_water_with_container', container_id=container.id) }}">
+                                            <input type="hidden" name="drink_type_id" value="{{ container.drink_type_id or 1 }}">
+                                            <button type="submit" class="btn btn-sm btn-success w-100">
+                                                <i class="bi bi-plus-circle"></i> Log
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Quick Actions -->
+        <div class="card dashboard-card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Quick Actions</h5>
+            </div>
+            <div class="card-body p-2">
+                <div class="row g-2">
+                    <div class="col-md-4">
+                        <a href="{{ url_for('chart') }}" class="btn btn-outline-primary d-block">
+                            <i class="bi bi-bar-chart-fill"></i> View Chart
+                        </a>
+                    </div>
+                    <div class="col-md-4">
+                        <a href="{{ url_for('profile') }}" class="btn btn-outline-primary d-block">
+                            <i class="bi bi-person-fill"></i> Profile
+                        </a>
+                    </div>
+                    <div class="col-md-4">
+                        <a href="{{ url_for('settings') }}" class="btn btn-outline-primary d-block">
+                            <i class="bi bi-gear-fill"></i> Settings
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Right Column -->
+    <div class="col-lg-4">
+        <!-- Weather Widget -->
+        {% if show_weather_widget %}
+        <div class="card dashboard-card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-cloud"></i> Weather Details</h5>
+            </div>
+            <div class="card-body p-2">
+                <div class="weather-loading text-center py-2">
+                    <div class="spinner-border text-primary spinner-border-sm" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mb-0 small">Fetching weather data...</p>
+                </div>
+                
+                <div class="weather-content" style="display: none;">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="weather-icon me-2"></div>
+                        <div>
+                            <h4 class="mb-0 weather-temp">--°C</h4>
+                            <p class="mb-0 text-muted small weather-condition">--</p>
+                        </div>
+                        <div class="ms-auto text-end">
+                            <p class="mb-1 small"><i class="bi bi-droplet-fill"></i> <span class="weather-humidity">--%</span></p>
+                            <p class="mb-0 small"><i class="bi bi-geo-alt"></i> <span class="weather-location">--</span></p>
+                        </div>
+                    </div>
+                    
+                    <hr class="my-2">
+                    
+                    <h6 class="compact-heading">Today's Hydration Recommendation</h6>
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="progress flex-grow-1 me-2" style="height: 15px;">
+                            <div class="progress-bar hydration-progress" role="progressbar" style="width: 0%;" 
+                                 aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                        </div>
+                        <div class="hydration-total fw-bold small">0 ml</div>
+                    </div>
+                    
+                    <div class="hydration-explanation small mb-2"></div>
+                    
+                    <div class="row g-1 mb-2">
+                        <div class="col-4">
+                            <div class="card bg-light">
+                                <div class="card-body p-1 text-center">
+                                    <small class="text-muted">Base</small>
+                                    <div class="hydration-base fw-bold small">2000 ml</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="card bg-light">
+                                <div class="card-body p-1 text-center">
+                                    <small class="text-muted">Weather</small>
+                                    <div class="hydration-weather fw-bold small">+0 ml</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="card bg-light">
+                                <div class="card-body p-1 text-center">
+                                    <small class="text-muted">Activity</small>
+                                    <div class="hydration-activity fw-bold small">+0 ml</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button class="btn btn-sm btn-primary w-100 update-goal">
+                        <i class="bi bi-check-circle"></i> Update Daily Goal
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Log Water Intake -->
+        <div class="card dashboard-card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Log Water Intake</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('log_water') }}">
+                    <div class="mb-2">
+                        <label for="amount" class="form-label small mb-1">Amount (ml)</label>
+                        <input type="number" class="form-control form-control-sm" id="amount" name="amount" min="1" required>
+                    </div>
+                    
+                    <div class="mb-2">
+                        <label for="drink_type" class="form-label small mb-1">Drink Type</label>
+                        <select class="form-select form-select-sm" id="drink_type" name="drink_type_id">
+                            {% for drink_type in drink_types %}
+                            <option value="{{ drink_type.id }}">{{ drink_type.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-2">
+                        <label for="notes" class="form-label small mb-1">Notes (optional)</label>
+                        <textarea class="form-control form-control-sm" id="notes" name="notes" rows="1"></textarea>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-sm">Log Water</button>
+                    </div>
+                </form>
+                
+                <div class="mt-2">
+                    <h6 class="small mb-1">Quick Add:</h6>
+                    <div class="d-flex flex-wrap gap-1">
+                        <form method="POST" action="{{ url_for('log_water') }}" class="d-inline">
+                            <input type="hidden" name="amount" value="200">
+                            <input type="hidden" name="drink_type_id" value="1">
+                            <button type="submit" class="btn btn-sm btn-outline-primary">200ml</button>
+                        </form>
+                        <form method="POST" action="{{ url_for('log_water') }}" class="d-inline">
+                            <input type="hidden" name="amount" value="330">
+                            <input type="hidden" name="drink_type_id" value="1">
+                            <button type="submit" class="btn btn-sm btn-outline-primary">330ml</button>
+                        </form>
+                        <form method="POST" action="{{ url_for('log_water') }}" class="d-inline">
+                            <input type="hidden" name="amount" value="500">
+                            <input type="hidden" name="drink_type_id" value="1">
+                            <button type="submit" class="btn btn-sm btn-outline-primary">500ml</button>
+                        </form>
+                        <form method="POST" action="{{ url_for('log_water') }}" class="d-inline">
+                            <input type="hidden" name="amount" value="750">
+                            <input type="hidden" name="drink_type_id" value="1">
+                            <button type="submit" class="btn btn-sm btn-outline-primary">750ml</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Hidden inputs for reminder settings -->
+<input type="hidden" id="reminderEnabled" value="{{ current_user.reminder_enabled }}">
+<input type="hidden" id="reminderInterval" value="{{ current_user.reminder_interval }}">
+
+<script src="{{ url_for('static', filename='js/reminder.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dynamic-logo.js') }}"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+{% if drink_labels %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('drinkTypeChart').getContext('2d');
+        
+        const drinkTypeChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: {{ drink_labels|tojson }},
+                datasets: [{
+                    data: {{ drink_data|tojson }},
+                    backgroundColor: {{ drink_colors|tojson }},
+                    borderColor: {{ drink_borders|tojson }},
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endif %}
+{% endblock %}

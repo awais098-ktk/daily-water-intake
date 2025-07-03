@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sarcastic Hydration Assistant - HydroMate</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .chat-container {
+            height: 500px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            padding: 15px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .user-message {
+            text-align: right;
+        }
+        
+        .user-message .message-bubble {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 18px 18px 5px 18px;
+            display: inline-block;
+            max-width: 70%;
+            box-shadow: 0 2px 5px rgba(0,123,255,0.3);
+        }
+        
+        .bot-message .message-bubble {
+            background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 18px 18px 18px 5px;
+            display: inline-block;
+            max-width: 70%;
+            box-shadow: 0 2px 5px rgba(40,167,69,0.3);
+        }
+        
+        .bot-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .typing-indicator {
+            display: none;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .typing-dots {
+            display: inline-flex;
+            align-items: center;
+            background: #e9ecef;
+            padding: 10px 15px;
+            border-radius: 18px;
+            margin-left: 50px;
+        }
+        
+        .typing-dots span {
+            height: 8px;
+            width: 8px;
+            background: #6c757d;
+            border-radius: 50%;
+            display: inline-block;
+            margin: 0 2px;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+        
+        .typing-dots span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dots span:nth-child(2) { animation-delay: -0.16s; }
+        
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+        
+        .input-group {
+            border-radius: 25px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .form-control {
+            border: none;
+            padding: 12px 20px;
+        }
+        
+        .btn-send {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            border: none;
+            padding: 12px 20px;
+            color: white;
+        }
+        
+        .btn-send:hover {
+            background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+            color: white;
+        }
+        
+        .status-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .progress-ring {
+            width: 80px;
+            height: 80px;
+        }
+        
+        .progress-ring-circle {
+            transition: stroke-dasharray 0.35s;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+        
+        .quick-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+        
+        .quick-action-btn {
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+        
+        .quick-action-btn:hover {
+            background: linear-gradient(135deg, #495057 0%, #343a40 100%);
+            color: white;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2><i class="fas fa-robot text-info"></i> Sarcastic Hydration Assistant</h2>
+                        <p class="text-muted">Your brutally honest water intake companion</p>
+                    </div>
+                    <div>
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-arrow-left"></i> Back to Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Chat Interface -->
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-comments"></i> Chat with Your Hydration Assistant
+                        </h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <!-- Chat Messages -->
+                        <div id="chatContainer" class="chat-container">
+                            <div class="message bot-message">
+                                <div class="d-flex align-items-start">
+                                    <div class="bot-avatar">
+                                        <i class="fas fa-robot"></i>
+                                    </div>
+                                    <div class="message-bubble">
+                                        Well, well, well... if it isn't my favorite dehydrated human. Ready to pretend you'll actually drink water today?
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Typing Indicator -->
+                        <div id="typingIndicator" class="typing-indicator">
+                            <div class="bot-avatar">
+                                <i class="fas fa-robot"></i>
+                            </div>
+                            <div class="typing-dots">
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                            </div>
+                        </div>
+                        
+                        <!-- Quick Actions -->
+                        <div class="p-3 border-top">
+                            <div class="quick-actions">
+                                <button class="btn quick-action-btn" onclick="sendQuickMessage('What\'s my status?')">
+                                    <i class="fas fa-chart-line"></i> My Status
+                                </button>
+                                <button class="btn quick-action-btn" onclick="sendQuickMessage('I drank 250ml of water')">
+                                    <i class="fas fa-tint"></i> Log 250ml
+                                </button>
+                                <button class="btn quick-action-btn" onclick="sendQuickMessage('I had 500ml')">
+                                    <i class="fas fa-glass-water"></i> Log 500ml
+                                </button>
+                                <button class="btn quick-action-btn" onclick="sendQuickMessage('Help')">
+                                    <i class="fas fa-question-circle"></i> Help
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Message Input -->
+                        <div class="p-3 border-top">
+                            <div class="input-group">
+                                <input type="text" id="messageInput" class="form-control" 
+                                       placeholder="Tell me how much water you drank... or ask for your status"
+                                       onkeypress="handleKeyPress(event)">
+                                <button class="btn btn-send" onclick="sendMessage()">
+                                    <i class="fas fa-paper-plane"></i> Send
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status Panel -->
+            <div class="col-lg-4">
+                <!-- Current Status -->
+                <div class="status-card">
+                    <h5 class="text-center mb-3">
+                        <i class="fas fa-tachometer-alt text-info"></i> Today's Progress
+                    </h5>
+                    <div class="text-center">
+                        <div class="d-inline-block position-relative">
+                            <svg class="progress-ring" width="80" height="80">
+                                <circle class="progress-ring-circle" 
+                                        stroke="#e9ecef" 
+                                        stroke-width="8" 
+                                        fill="transparent" 
+                                        r="32" 
+                                        cx="40" 
+                                        cy="40"/>
+                                <circle id="progressCircle"
+                                        class="progress-ring-circle" 
+                                        stroke="#007bff" 
+                                        stroke-width="8" 
+                                        fill="transparent" 
+                                        r="32" 
+                                        cx="40" 
+                                        cy="40"
+                                        stroke-dasharray="0 201"
+                                        stroke-linecap="round"/>
+                            </svg>
+                            <div class="position-absolute top-50 start-50 translate-middle">
+                                <div id="progressPercentage" class="fw-bold text-primary">0%</div>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <div id="currentIntake" class="h4 text-primary">0 ml</div>
+                            <div class="text-muted">of <span id="dailyGoal">2000</span> ml goal</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="status-card">
+                    <h6><i class="fas fa-chart-bar text-success"></i> Quick Stats</h6>
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div id="remainingAmount" class="h5 text-warning">2000 ml</div>
+                            <small class="text-muted">Remaining</small>
+                        </div>
+                        <div class="col-6">
+                            <div id="lastUpdate" class="h6 text-info">Never</div>
+                            <small class="text-muted">Last Update</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tips -->
+                <div class="status-card">
+                    <h6><i class="fas fa-lightbulb text-warning"></i> Pro Tips</h6>
+                    <ul class="list-unstyled small">
+                        <li><i class="fas fa-check text-success"></i> Say "I drank 500ml" to log water</li>
+                        <li><i class="fas fa-check text-success"></i> Ask "What's my status?" for progress</li>
+                        <li><i class="fas fa-check text-success"></i> Use units: ml, liters, cups, glasses</li>
+                        <li><i class="fas fa-check text-success"></i> The bot gets more sarcastic as you fall behind!</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentIntake = 0;
+        let dailyGoal = 2000;
+
+        // Initialize the interface
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCurrentStatus();
+            focusInput();
+        });
+
+        function focusInput() {
+            document.getElementById('messageInput').focus();
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        function sendQuickMessage(message) {
+            document.getElementById('messageInput').value = message;
+            sendMessage();
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+
+            // Add user message to chat
+            addMessageToChat(message, 'user');
+            
+            // Clear input
+            input.value = '';
+            
+            // Show typing indicator
+            showTypingIndicator();
+            
+            // Send to backend
+            fetch('/chatbot/api/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ message: message })
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideTypingIndicator();
+                
+                if (data.success) {
+                    // Add bot response to chat
+                    addMessageToChat(data.response, 'bot');
+                    
+                    // Update status if intake was logged
+                    if (data.intake_logged) {
+                        updateStatus(data.new_total, data.daily_goal);
+                        showSuccessNotification(`Added ${data.added_amount}ml! New total: ${data.new_total}ml`);
+                    } else {
+                        updateStatus(data.current_intake, data.daily_goal);
+                    }
+                } else {
+                    addMessageToChat(data.response || 'Sorry, something went wrong. Are you too dehydrated to use technology?', 'bot');
+                }
+            })
+            .catch(error => {
+                hideTypingIndicator();
+                console.error('Error:', error);
+                addMessageToChat('Oops! Something went wrong. Maybe try drinking some water and try again?', 'bot');
+            });
+        }
+
+        function addMessageToChat(message, sender) {
+            const chatContainer = document.getElementById('chatContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}-message`;
+            
+            if (sender === 'user') {
+                messageDiv.innerHTML = `
+                    <div class="message-bubble">${escapeHtml(message)}</div>
+                `;
+            } else {
+                messageDiv.innerHTML = `
+                    <div class="d-flex align-items-start">
+                        <div class="bot-avatar">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <div class="message-bubble">${escapeHtml(message)}</div>
+                    </div>
+                `;
+            }
+            
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function showTypingIndicator() {
+            document.getElementById('typingIndicator').style.display = 'flex';
+            const chatContainer = document.getElementById('chatContainer');
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function hideTypingIndicator() {
+            document.getElementById('typingIndicator').style.display = 'none';
+        }
+
+        function loadCurrentStatus() {
+            fetch('/chatbot/api/status')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    updateStatus(data.current_intake, data.daily_goal);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading status:', error);
+            });
+        }
+
+        function updateStatus(intake, goal) {
+            currentIntake = intake;
+            dailyGoal = goal;
+            
+            const percentage = Math.min(100, (intake / goal) * 100);
+            const remaining = Math.max(0, goal - intake);
+            
+            // Update progress circle
+            const circumference = 2 * Math.PI * 32;
+            const offset = circumference - (percentage / 100) * circumference;
+            document.getElementById('progressCircle').style.strokeDasharray = `${circumference - offset} ${circumference}`;
+            
+            // Update text elements
+            document.getElementById('progressPercentage').textContent = `${Math.round(percentage)}%`;
+            document.getElementById('currentIntake').textContent = `${intake} ml`;
+            document.getElementById('dailyGoal').textContent = goal;
+            document.getElementById('remainingAmount').textContent = `${remaining} ml`;
+            document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+        }
+
+        function showSuccessNotification(message) {
+            // Create a simple toast notification
+            const toast = document.createElement('div');
+            toast.className = 'position-fixed top-0 end-0 m-3 alert alert-success alert-dismissible';
+            toast.style.zIndex = '9999';
+            toast.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>
+            `;
+            
+            document.body.appendChild(toast);
+            
+            // Auto-remove after 3 seconds
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.remove();
+                }
+            }, 3000);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

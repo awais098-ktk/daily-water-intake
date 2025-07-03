@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+
+{% block title %}Test Data Export - Water Intake Tracker{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="bi bi-bug"></i> Data Export Test Page</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Test Environment:</strong> This page is for testing the data export functionality before implementing it in the main export page.
+                    </div>
+
+                    <!-- Test Results Section -->
+                    <div id="test-results" class="mb-4">
+                        <h5>Test Results</h5>
+                        <div id="test-output" class="border p-3 bg-light" style="min-height: 100px; font-family: monospace; white-space: pre-wrap;">
+                            Click "Run Tests" to start testing...
+                        </div>
+                    </div>
+
+                    <!-- Test Controls -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <button id="run-tests" class="btn btn-primary btn-lg w-100">
+                                <i class="bi bi-play-circle"></i> Run All Tests
+                            </button>
+                        </div>
+                        <div class="col-md-6">
+                            <button id="clear-results" class="btn btn-secondary btn-lg w-100">
+                                <i class="bi bi-trash"></i> Clear Results
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Individual Test Buttons -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <button id="test-preview" class="btn btn-outline-primary w-100">
+                                <i class="bi bi-eye"></i> Test Preview
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <button id="test-csv" class="btn btn-outline-success w-100">
+                                <i class="bi bi-file-earmark-text"></i> Test CSV
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <button id="test-json" class="btn btn-outline-warning w-100">
+                                <i class="bi bi-file-earmark-code"></i> Test JSON
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <button id="test-pdf" class="btn btn-outline-danger w-100">
+                                <i class="bi bi-file-earmark-pdf"></i> Test PDF
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Test Configuration -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0">Test Configuration</h6>
+                        </div>
+                        <div class="card-body">
+                            <form id="test-config">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <label for="test-start-date" class="form-label">Start Date</label>
+                                        <input type="date" class="form-control" id="test-start-date" name="start_date">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="test-end-date" class="form-label">End Date</label>
+                                        <input type="date" class="form-control" id="test-end-date" name="end_date">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="test-drink-types" class="form-label">Drink Types</label>
+                                        <select multiple class="form-select" id="test-drink-types" name="drink_types">
+                                            {% for drink_type in drink_types %}
+                                            <option value="{{ drink_type.id }}" selected>{{ drink_type.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col-md-6">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="test-include-charts" name="include_charts" checked>
+                                            <label class="form-check-label" for="test-include-charts">
+                                                Include Charts in PDF
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Navigation -->
+                    <div class="mt-4">
+                        <a href="{{ url_for('export_data') }}" class="btn btn-success">
+                            <i class="bi bi-arrow-right"></i> Go to Main Export Page
+                        </a>
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-house"></i> Back to Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const testOutput = document.getElementById('test-output');
+    const runTestsBtn = document.getElementById('run-tests');
+    const clearResultsBtn = document.getElementById('clear-results');
+    const testPreviewBtn = document.getElementById('test-preview');
+    const testCsvBtn = document.getElementById('test-csv');
+    const testJsonBtn = document.getElementById('test-json');
+    const testPdfBtn = document.getElementById('test-pdf');
+
+    function log(message) {
+        const timestamp = new Date().toLocaleTimeString();
+        testOutput.textContent += `[${timestamp}] ${message}\n`;
+        testOutput.scrollTop = testOutput.scrollHeight;
+    }
+
+    function clearLog() {
+        testOutput.textContent = '';
+    }
+
+    function getFormData() {
+        const form = document.getElementById('test-config');
+        const formData = new FormData(form);
+        return formData;
+    }
+
+    async function testPreview() {
+        log('Testing export preview...');
+        try {
+            const formData = getFormData();
+            const response = await fetch('/api/export/preview', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                log('✅ Preview test PASSED');
+                log(`Stats: ${JSON.stringify(result.stats, null, 2)}`);
+            } else {
+                log(`❌ Preview test FAILED: ${result.error}`);
+            }
+        } catch (error) {
+            log(`❌ Preview test ERROR: ${error.message}`);
+        }
+    }
+
+    async function testExport(format) {
+        log(`Testing ${format.toUpperCase()} export...`);
+        try {
+            const formData = getFormData();
+            formData.append('format', format);
+            
+            const response = await fetch('/api/export', {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (response.ok) {
+                const contentType = response.headers.get('content-type');
+                const contentLength = response.headers.get('content-length');
+                log(`✅ ${format.toUpperCase()} export PASSED`);
+                log(`Content-Type: ${contentType}`);
+                log(`Content-Length: ${contentLength} bytes`);
+                
+                // For small files, show a preview
+                if (format === 'json' && contentLength < 1000) {
+                    const text = await response.text();
+                    log(`Preview: ${text.substring(0, 200)}...`);
+                }
+            } else {
+                const result = await response.json();
+                log(`❌ ${format.toUpperCase()} export FAILED: ${result.error}`);
+            }
+        } catch (error) {
+            log(`❌ ${format.toUpperCase()} export ERROR: ${error.message}`);
+        }
+    }
+
+    async function runAllTests() {
+        log('Starting comprehensive export tests...');
+        log('=====================================');
+        
+        await testPreview();
+        await testExport('csv');
+        await testExport('json');
+        await testExport('pdf');
+        
+        log('=====================================');
+        log('All tests completed!');
+    }
+
+    // Event listeners
+    runTestsBtn.addEventListener('click', runAllTests);
+    clearResultsBtn.addEventListener('click', clearLog);
+    testPreviewBtn.addEventListener('click', testPreview);
+    testCsvBtn.addEventListener('click', () => testExport('csv'));
+    testJsonBtn.addEventListener('click', () => testExport('json'));
+    testPdfBtn.addEventListener('click', () => testExport('pdf'));
+
+    // Initial log
+    log('Test page loaded. Ready to test data export functionality.');
+});
+</script>
+{% endblock %}

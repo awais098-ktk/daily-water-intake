@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update Goal Test</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        body {
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .weather-widget {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="mb-4">Update Goal Test</h1>
+        
+        <div class="card mb-4 weather-widget">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-cloud"></i> Weather & Hydration</h5>
+                <div>
+                    <input type="text" class="form-control form-control-sm d-inline-block" id="city-input" value="New York" style="width: 100px;">
+                    <button type="button" class="btn btn-sm btn-light location-btn" title="Get Location">
+                        <i class="bi bi-geo-alt"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-light refresh-weather" title="Refresh Weather Data">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Loading state -->
+                <div class="weather-loading text-center py-3">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2 mb-0">Fetching weather data...</p>
+                </div>
+                
+                <!-- Error state -->
+                <div class="weather-error text-center py-3" style="display: none;">
+                    <i class="bi bi-exclamation-triangle text-warning fs-1"></i>
+                    <p class="mt-2 mb-0 weather-error-message">Weather API error: 404</p>
+                    <button class="btn btn-sm btn-primary mt-2 retry-weather">Try Again</button>
+                </div>
+                
+                <!-- Content state -->
+                <div class="weather-content" style="display: none;">
+                    <div class="row align-items-center mb-3">
+                        <div class="col-md-6 text-center text-md-start">
+                            <h3 class="city-name mb-0">New York</h3>
+                            <p class="text-muted mb-0 current-date">May 19, 2025</p>
+                        </div>
+                        <div class="col-md-6 text-center text-md-end">
+                            <div class="d-flex align-items-center justify-content-center justify-content-md-end">
+                                <img src="" alt="Weather icon" class="weather-icon me-2" width="50">
+                                <div>
+                                    <h2 class="temperature mb-0">25°C</h2>
+                                    <p class="weather-description mb-0">Clear sky</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card mb-3">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0"><i class="bi bi-droplet"></i> Hydration Recommendation</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="recommendation-text">Based on the current weather and your activity level, we recommend drinking 2300 ml of water today.</p>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <div class="card">
+                                        <div class="card-body text-center">
+                                            <h6 class="card-title">Base</h6>
+                                            <p class="base-value mb-0">2000 ml</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card">
+                                        <div class="card-body text-center">
+                                            <h6 class="card-title">Weather Adjustment</h6>
+                                            <p class="weather-adjustment mb-0">+200 ml</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card">
+                                        <div class="card-body text-center">
+                                            <h6 class="card-title">Activity Adjustment</h6>
+                                            <p class="activity-adjustment mb-0">+100 ml</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="progress mb-2">
+                                <div class="progress-bar bg-info" role="progressbar" style="width: 25%;" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">25%</div>
+                            </div>
+                            <div class="d-flex justify-content-between mb-3">
+                                <small class="text-muted">0 ml</small>
+                                <small class="text-muted recommendation-total">2300 ml</small>
+                            </div>
+                            
+                            <div class="text-center">
+                                <button class="btn btn-primary update-goal">
+                                    <i class="bi bi-check-circle"></i> Update Daily Goal
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">Debug Information</h5>
+            </div>
+            <div class="card-body">
+                <h6>Current Daily Goal:</h6>
+                <p id="current-goal">2000 ml</p>
+                
+                <h6>API Calls:</h6>
+                <pre id="api-log" class="bg-light p-3" style="max-height: 200px; overflow-y: auto;"></pre>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Elements
+            const cityInput = document.getElementById('city-input');
+            const refreshBtn = document.querySelector('.refresh-weather');
+            const retryBtn = document.querySelector('.retry-weather');
+            const locationBtn = document.querySelector('.location-btn');
+            const updateGoalBtn = document.querySelector('.update-goal');
+            
+            const loadingEl = document.querySelector('.weather-loading');
+            const errorEl = document.querySelector('.weather-error');
+            const contentEl = document.querySelector('.weather-content');
+            const errorMsgEl = document.querySelector('.weather-error-message');
+            
+            const currentGoalEl = document.getElementById('current-goal');
+            const apiLogEl = document.getElementById('api-log');
+            
+            // Disable update goal button initially
+            updateGoalBtn.disabled = true;
+            
+            // Global recommendation data
+            window.recommendationData = null;
+            
+            // Function to log API calls
+            function logAPI(message) {
+                const timestamp = new Date().toLocaleTimeString();
+                apiLogEl.textContent += `[${timestamp}] ${message}\n`;
+                apiLogEl.scrollTop = apiLogEl.scrollHeight;
+            }
+            
+            // Function to show loading state
+            function showLoading() {
+                loadingEl.style.display = 'block';
+                errorEl.style.display = 'none';
+                contentEl.style.display = 'none';
+            }
+            
+            // Function to show error state
+            function showError(message) {
+                loadingEl.style.display = 'none';
+                errorEl.style.display = 'block';
+                contentEl.style.display = 'none';
+                errorMsgEl.textContent = message;
+            }
+            
+            // Function to show content state
+            function showContent() {
+                loadingEl.style.display = 'none';
+                errorEl.style.display = 'none';
+                contentEl.style.display = 'block';
+            }
+            
+            // Function to update UI with weather data
+            function updateWeatherUI(data) {
+                document.querySelector('.city-name').textContent = data.name;
+                document.querySelector('.temperature').textContent = `${Math.round(data.main.temp)}°C`;
+                document.querySelector('.weather-description').textContent = data.weather[0].description;
+                
+                const date = new Date();
+                document.querySelector('.current-date').textContent = date.toLocaleDateString('en-US', { 
+                    month: 'long', 
+                    day: 'numeric', 
+                    year: 'numeric' 
+                });
+                
+                const iconCode = data.weather[0].icon;
+                const iconUrl = `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
+                document.querySelector('.weather-icon').src = iconUrl;
+            }
+            
+            // Function to update UI with hydration data
+            function updateHydrationUI(data) {
+                document.querySelector('.recommendation-text').textContent = data.explanation;
+                document.querySelector('.recommendation-total').textContent = `${data.total} ml`;
+                document.querySelector('.base-value').textContent = `${data.base} ml`;
+                
+                const weatherAdjustment = data.temp_adjustment + data.humidity_adjustment;
+                const weatherSign = weatherAdjustment >= 0 ? '+' : '';
+                document.querySelector('.weather-adjustment').textContent = `${weatherSign}${weatherAdjustment} ml`;
+                
+                const activitySign = data.activity_adjustment >= 0 ? '+' : '';
+                document.querySelector('.activity-adjustment').textContent = `${activitySign}${data.activity_adjustment} ml`;
+                
+                const progressBar = document.querySelector('.progress-bar');
+                const currentProgress = 25; // This would come from user's actual intake
+                progressBar.style.width = `${currentProgress}%`;
+                progressBar.textContent = `${currentProgress}%`;
+                progressBar.setAttribute('aria-valuenow', currentProgress);
+                
+                // Store recommendation data and enable update button
+                window.recommendationData = data;
+                updateGoalBtn.disabled = false;
+            }
+            
+            // Function to fetch weather data
+            async function fetchWeatherData() {
+                const currentCity = cityInput.value.trim() || 'New York';
+                logAPI(`Fetching weather for: ${currentCity}`);
+                
+                showLoading();
+                
+                try {
+                    // API key
+                    const apiKey = '51697047df57d0d77efa8d330e6fb44d';
+                    
+                    // Handle country names
+                    let cityToUse = currentCity;
+                    if (currentCity.toLowerCase() === 'pakistan') {
+                        cityToUse = 'Lahore';
+                        logAPI('Changed country name "Pakistan" to city name "Lahore"');
+                    }
+                    
+                    // Construct the URL
+                    const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(cityToUse)}&appid=${apiKey}&units=metric`;
+                    logAPI(`API URL: ${url.replace(apiKey, 'API_KEY')}`);
+                    
+                    // Fetch weather data
+                    const response = await fetch(url);
+                    
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        logAPI(`Error response: ${JSON.stringify(errorData)}`);
+                        throw new Error(errorData.message || `Weather API error: ${response.status}`);
+                    }
+                    
+                    const weatherData = await response.json();
+                    logAPI(`Weather data received: ${JSON.stringify(weatherData).substring(0, 100)}...`);
+                    
+                    // Calculate hydration recommendation
+                    const baseHydration = 2000;
+                    const temperature = weatherData.main?.temp || 25;
+                    const humidity = weatherData.main?.humidity || 60;
+                    const weatherCondition = weatherData.weather?.[0]?.description || 'clear sky';
+                    
+                    let tempAdjustment = 0;
+                    if (temperature > 30) {
+                        tempAdjustment = 300;
+                    } else if (temperature > 25) {
+                        tempAdjustment = 200;
+                    } else if (temperature > 20) {
+                        tempAdjustment = 100;
+                    }
+                    
+                    let humidityAdjustment = 0;
+                    if (humidity > 80) {
+                        humidityAdjustment = 100;
+                    } else if (humidity > 60) {
+                        humidityAdjustment = 50;
+                    }
+                    
+                    const activityAdjustment = 100;
+                    const total = baseHydration + tempAdjustment + humidityAdjustment + activityAdjustment;
+                    
+                    const recommendationData = {
+                        base: baseHydration,
+                        temperature: temperature,
+                        humidity: humidity,
+                        weather_condition: weatherCondition,
+                        temp_adjustment: tempAdjustment,
+                        humidity_adjustment: humidityAdjustment,
+                        activity_adjustment: activityAdjustment,
+                        total: total,
+                        explanation: `Based on the current weather (${temperature}°C, ${humidity}% humidity, ${weatherCondition}) and your activity level, we recommend drinking ${total} ml of water today.`
+                    };
+                    
+                    logAPI(`Recommendation calculated: ${JSON.stringify(recommendationData)}`);
+                    
+                    // Update UI
+                    updateWeatherUI(weatherData);
+                    updateHydrationUI(recommendationData);
+                    showContent();
+                    
+                } catch (error) {
+                    logAPI(`Error: ${error.message}`);
+                    showError(error.message || 'Weather API error: 404');
+                }
+            }
+            
+            // Function to update daily goal
+            async function updateDailyGoal() {
+                try {
+                    // Check if we have recommendation data
+                    if (!window.recommendationData || !window.recommendationData.total) {
+                        logAPI('No recommendation data available');
+                        throw new Error('No recommendation data available. Please refresh the weather data.');
+                    }
+                    
+                    // Get the recommended total
+                    const recommendedTotal = window.recommendationData.total;
+                    logAPI(`Updating daily goal to: ${recommendedTotal} ml`);
+                    
+                    // Update button state
+                    updateGoalBtn.disabled = true;
+                    updateGoalBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Updating...';
+                    
+                    // Simulate API call
+                    setTimeout(() => {
+                        logAPI('Goal updated successfully');
+                        
+                        // Update current goal display
+                        currentGoalEl.textContent = `${recommendedTotal} ml`;
+                        
+                        // Show success message
+                        updateGoalBtn.innerHTML = '<i class="bi bi-check-circle"></i> Goal Updated!';
+                        updateGoalBtn.classList.remove('btn-primary');
+                        updateGoalBtn.classList.add('btn-success');
+                        
+                        // Update the base value
+                        document.querySelector('.base-value').textContent = `${recommendedTotal} ml`;
+                        
+                        // Reset button after a delay
+                        setTimeout(() => {
+                            updateGoalBtn.disabled = false;
+                            updateGoalBtn.innerHTML = '<i class="bi bi-check-circle"></i> Update Daily Goal';
+                            updateGoalBtn.classList.remove('btn-success');
+                            updateGoalBtn.classList.add('btn-primary');
+                        }, 2000);
+                    }, 1000);
+                    
+                } catch (error) {
+                    logAPI(`Error updating goal: ${error.message}`);
+                    updateGoalBtn.innerHTML = '<i class="bi bi-x-circle"></i> Error';
+                    updateGoalBtn.classList.remove('btn-primary');
+                    updateGoalBtn.classList.add('btn-danger');
+                    
+                    // Reset button after a delay
+                    setTimeout(() => {
+                        updateGoalBtn.disabled = false;
+                        updateGoalBtn.innerHTML = '<i class="bi bi-check-circle"></i> Update Daily Goal';
+                        updateGoalBtn.classList.remove('btn-danger');
+                        updateGoalBtn.classList.add('btn-primary');
+                    }, 3000);
+                }
+            }
+            
+            // Event listeners
+            refreshBtn.addEventListener('click', fetchWeatherData);
+            retryBtn.addEventListener('click', fetchWeatherData);
+            updateGoalBtn.addEventListener('click', updateDailyGoal);
+            
+            cityInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    fetchWeatherData();
+                }
+            });
+            
+            locationBtn.addEventListener('click', function() {
+                const cities = ['London', 'Tokyo', 'Paris', 'Sydney', 'Dubai', 'Lahore', 'Karachi'];
+                const randomCity = cities[Math.floor(Math.random() * cities.length)];
+                
+                logAPI(`Location button clicked. Setting city to: ${randomCity}`);
+                cityInput.value = randomCity;
+                fetchWeatherData();
+            });
+            
+            // Initial fetch
+            fetchWeatherData();
+        });
+    </script>
+</body>
+</html>

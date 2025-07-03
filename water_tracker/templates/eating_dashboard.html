@@ -1,0 +1,628 @@
+{% extends 'base.html' %}
+
+{% block title %}Eating Tracker - HydroMate{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Eating dashboard specific styles */
+    .dashboard-card {
+        margin-bottom: 15px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .card-header {
+        padding: 0.5rem 1rem;
+    }
+
+    .card-body {
+        padding: 0.75rem;
+    }
+
+    .progress {
+        height: 20px;
+    }
+
+    .nutrition-card {
+        transition: transform 0.2s;
+        border-left: 4px solid var(--accent-color);
+    }
+
+    .nutrition-card:hover {
+        transform: translateY(-2px);
+    }
+
+    .meal-type-section {
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+        background-color: #f8f9fa;
+    }
+
+    .meal-item {
+        background-color: white;
+        border: 1px solid #e9ecef;
+        border-radius: 6px;
+        padding: 10px;
+        margin-bottom: 8px;
+    }
+
+    .meal-container-card {
+        transition: transform 0.2s;
+        cursor: pointer;
+    }
+
+    .meal-container-card:hover {
+        transform: translateY(-3px);
+    }
+
+    .nutrition-progress {
+        margin-bottom: 10px;
+    }
+
+    .nutrition-value {
+        font-weight: bold;
+        color: var(--accent-color);
+    }
+
+    .meal-type-badge {
+        font-size: 0.8rem;
+        padding: 2px 8px;
+    }
+
+    .calorie-display {
+        font-size: 2rem;
+        font-weight: bold;
+        color: var(--accent-color);
+    }
+
+    .macro-circle {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        color: white;
+        margin: 0 auto 10px;
+    }
+
+    .carbs-circle { background-color: #FF6B6B; }
+    .fats-circle { background-color: #4ECDC4; }
+    .proteins-circle { background-color: #45B7D1; }
+
+    .quick-add-btn {
+        border: 2px dashed #dee2e6;
+        background-color: transparent;
+        color: #6c757d;
+        transition: all 0.2s;
+    }
+
+    .quick-add-btn:hover {
+        border-color: var(--accent-color);
+        color: var(--accent-color);
+        background-color: rgba(77, 166, 255, 0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="bi bi-egg-fried text-primary"></i> Daily Eating Tracker</h2>
+            <p class="text-muted">Track your nutrition and reach your daily goals</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Left Column - Main Content -->
+        <div class="col-lg-8">
+            <!-- Today's Nutrition Overview -->
+            <div class="card dashboard-card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-bar-chart-fill"></i> Today's Nutrition Progress</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Calories -->
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span><strong>Calories</strong></span>
+                                <span class="nutrition-value">{{ "%.0f"|format(today_nutrition.calories) }} / {{ nutrition_goals.daily_calories }} kcal</span>
+                            </div>
+                            <div class="progress nutrition-progress">
+                                <div class="progress-bar bg-primary" role="progressbar" 
+                                     style="width: {{ progress.calories }}%" 
+                                     aria-valuenow="{{ progress.calories }}" 
+                                     aria-valuemin="0" aria-valuemax="100">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Macronutrients -->
+                        <div class="col-md-6">
+                            <div class="row text-center">
+                                <div class="col-4">
+                                    <div class="macro-circle carbs-circle">
+                                        {{ "%.0f"|format(progress.carbs) }}%
+                                    </div>
+                                    <small>Carbs<br>{{ "%.1f"|format(today_nutrition.carbs) }}g</small>
+                                </div>
+                                <div class="col-4">
+                                    <div class="macro-circle fats-circle">
+                                        {{ "%.0f"|format(progress.fats) }}%
+                                    </div>
+                                    <small>Fats<br>{{ "%.1f"|format(today_nutrition.fats) }}g</small>
+                                </div>
+                                <div class="col-4">
+                                    <div class="macro-circle proteins-circle">
+                                        {{ "%.0f"|format(progress.proteins) }}%
+                                    </div>
+                                    <small>Proteins<br>{{ "%.1f"|format(today_nutrition.proteins) }}g</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Meal Logging -->
+            <div class="card dashboard-card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-plus-circle"></i> Quick Add Meal</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('log_meal') }}">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="food_name" class="form-label">Food Name</label>
+                                    <input type="text" class="form-control" id="food_name" name="food_name" required>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="mb-3">
+                                    <label for="quantity_g" class="form-label">Quantity (g)</label>
+                                    <input type="number" class="form-control" id="quantity_g" name="quantity_g" step="0.1" required>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="mb-3">
+                                    <label for="calories" class="form-label">Calories</label>
+                                    <input type="number" class="form-control" id="calories" name="calories" step="0.1" required>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="mb-3">
+                                    <label for="meal_type" class="form-label">Meal Type</label>
+                                    <select class="form-select" id="meal_type" name="meal_type">
+                                        <option value="breakfast">Breakfast</option>
+                                        <option value="lunch">Lunch</option>
+                                        <option value="dinner">Dinner</option>
+                                        <option value="snack">Snack</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="mb-3">
+                                    <label class="form-label">&nbsp;</label>
+                                    <button type="submit" class="btn btn-success w-100">
+                                        <i class="bi bi-plus-circle"></i> Add
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Advanced nutrition fields (collapsible) -->
+                        <div class="collapse" id="advancedNutrition">
+                            <div class="row">
+                                <div class="col-md-2">
+                                    <div class="mb-3">
+                                        <label for="carbs" class="form-label">Carbs (g)</label>
+                                        <input type="number" class="form-control" id="carbs" name="carbs" step="0.1" value="0">
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="mb-3">
+                                        <label for="fats" class="form-label">Fats (g)</label>
+                                        <input type="number" class="form-control" id="fats" name="fats" step="0.1" value="0">
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="mb-3">
+                                        <label for="proteins" class="form-label">Proteins (g)</label>
+                                        <input type="number" class="form-control" id="proteins" name="proteins" step="0.1" value="0">
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="mb-3">
+                                        <label for="fiber" class="form-label">Fiber (g)</label>
+                                        <input type="number" class="form-control" id="fiber" name="fiber" step="0.1" value="0">
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="mb-3">
+                                        <label for="sugar" class="form-label">Sugar (g)</label>
+                                        <input type="number" class="form-control" id="sugar" name="sugar" step="0.1" value="0">
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="mb-3">
+                                        <label for="sodium" class="form-label">Sodium (mg)</label>
+                                        <input type="number" class="form-control" id="sodium" name="sodium" step="0.1" value="0">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center">
+                            <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#advancedNutrition">
+                                <i class="bi bi-gear"></i> Advanced Nutrition
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Today's Meals by Type -->
+            {% for meal_type, meals in meals_by_type.items() %}
+            <div class="meal-type-section">
+                <h6 class="text-capitalize mb-3">
+                    <i class="bi bi-{{ 'sunrise' if meal_type == 'breakfast' else 'sun' if meal_type == 'lunch' else 'moon' if meal_type == 'dinner' else 'star' }}"></i>
+                    {{ meal_type.title() }}
+                    <span class="badge bg-secondary ms-2">{{ meals|length }} items</span>
+                </h6>
+                
+                {% if meals %}
+                    {% for meal in meals %}
+                    <div class="meal-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ meal.food_name }}</strong>
+                                <small class="text-muted d-block">{{ "%.1f"|format(meal.quantity_g) }}g</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="nutrition-value">{{ "%.0f"|format(meal.calories) }} cal</span>
+                                <small class="text-muted d-block">
+                                    C: {{ "%.1f"|format(meal.carbs) }}g | 
+                                    F: {{ "%.1f"|format(meal.fats) }}g | 
+                                    P: {{ "%.1f"|format(meal.proteins) }}g
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center text-muted py-3">
+                        <i class="bi bi-plus-circle fs-1"></i>
+                        <p>No {{ meal_type }} logged yet</p>
+                    </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Right Column - Sidebar -->
+        <div class="col-lg-4">
+            <!-- Quick Actions -->
+            <div class="card dashboard-card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-lightning-fill"></i> Quick Actions</h5>
+                </div>
+                <div class="card-body p-2">
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <a href="{{ url_for('food_search') }}" class="btn btn-outline-primary d-block">
+                                <i class="bi bi-search"></i> Food Search
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            <a href="{{ url_for('nutrition_goals') }}" class="btn btn-outline-primary d-block">
+                                <i class="bi bi-target"></i> Goals
+                            </a>
+                        </div>
+                        <div class="col-12">
+                            <a href="{{ url_for('meal_containers') }}" class="btn btn-outline-primary d-block">
+                                <i class="bi bi-box"></i> Meal Containers
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- My Meal Containers -->
+            {% if meal_containers %}
+            <div class="card dashboard-card">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="bi bi-box-seam"></i> My Meal Containers</h5>
+                </div>
+                <div class="card-body">
+                    {% for container in meal_containers %}
+                    <div class="meal-container-card card mb-2">
+                        <div class="card-body p-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">{{ container.name }}</h6>
+                                    <small class="text-muted">{{ "%.0f"|format(container.total_calories) }} cal</small>
+                                </div>
+                                <form method="POST" action="{{ url_for('log_meal_container', container_id=container.id) }}" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-success">
+                                        <i class="bi bi-plus-circle"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    <div class="text-center mt-2">
+                        <a href="{{ url_for('meal_containers') }}" class="btn btn-sm btn-outline-warning">View All</a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Nutrition Summary -->
+            <div class="card dashboard-card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="bi bi-pie-chart"></i> Today's Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <div class="calorie-display">{{ "%.0f"|format(today_nutrition.calories) }}</div>
+                        <small class="text-muted">calories consumed</small>
+                    </div>
+
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="nutrition-value">{{ "%.1f"|format(today_nutrition.fiber) }}g</div>
+                            <small class="text-muted">Fiber</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="nutrition-value">{{ "%.1f"|format(today_nutrition.sugar) }}g</div>
+                            <small class="text-muted">Sugar</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="nutrition-value">{{ "%.0f"|format(today_nutrition.sodium) }}mg</div>
+                            <small class="text-muted">Sodium</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Macro Distribution Chart -->
+            <div class="card dashboard-card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-pie-chart-fill"></i> Macro Distribution</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="macroChart" width="300" height="300"></canvas>
+                </div>
+            </div>
+
+            <!-- Weekly Nutrition Trend -->
+            <div class="card dashboard-card">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="bi bi-graph-up"></i> Weekly Trend</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="weeklyChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Auto-set meal type based on current time
+    document.addEventListener('DOMContentLoaded', function() {
+        const now = new Date();
+        const hour = now.getHours();
+        const mealTypeSelect = document.getElementById('meal_type');
+
+        if (hour >= 5 && hour < 11) {
+            mealTypeSelect.value = 'breakfast';
+        } else if (hour >= 11 && hour < 16) {
+            mealTypeSelect.value = 'lunch';
+        } else if (hour >= 16 && hour < 22) {
+            mealTypeSelect.value = 'dinner';
+        } else {
+            mealTypeSelect.value = 'snack';
+        }
+
+        // Initialize charts
+        initializeMacroChart();
+        initializeWeeklyChart();
+    });
+
+    // Macro Distribution Pie Chart
+    function initializeMacroChart() {
+        const ctx = document.getElementById('macroChart').getContext('2d');
+
+        const carbs = {{ today_nutrition.carbs }};
+        const fats = {{ today_nutrition.fats }};
+        const proteins = {{ today_nutrition.proteins }};
+
+        const total = carbs + fats + proteins;
+
+        if (total === 0) {
+            // Show placeholder when no data
+            ctx.font = '16px Arial';
+            ctx.fillStyle = '#6c757d';
+            ctx.textAlign = 'center';
+            ctx.fillText('No data yet', ctx.canvas.width / 2, ctx.canvas.height / 2);
+            return;
+        }
+
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Carbohydrates', 'Fats', 'Proteins'],
+                datasets: [{
+                    data: [carbs, fats, proteins],
+                    backgroundColor: [
+                        '#FF6B6B',  // Carbs - Red
+                        '#4ECDC4',  // Fats - Teal
+                        '#45B7D1'   // Proteins - Blue
+                    ],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            usePointStyle: true
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed;
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return `${label}: ${value.toFixed(1)}g (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Weekly Nutrition Trend Line Chart
+    function initializeWeeklyChart() {
+        const ctx = document.getElementById('weeklyChart').getContext('2d');
+
+        // Fetch weekly nutrition data
+        fetch('/eating/api/nutrition_data?days=7')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const nutritionData = data.data;
+
+                    // Prepare data for chart
+                    const dates = Object.keys(nutritionData).sort();
+                    const caloriesData = dates.map(date => nutritionData[date].calories);
+                    const carbsData = dates.map(date => nutritionData[date].carbs);
+                    const fatsData = dates.map(date => nutritionData[date].fats);
+                    const proteinsData = dates.map(date => nutritionData[date].proteins);
+
+                    // Format dates for display
+                    const labels = dates.map(date => {
+                        const d = new Date(date);
+                        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    });
+
+                    new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                {
+                                    label: 'Calories',
+                                    data: caloriesData,
+                                    borderColor: '#4DA6FF',
+                                    backgroundColor: 'rgba(77, 166, 255, 0.1)',
+                                    tension: 0.4,
+                                    yAxisID: 'y'
+                                },
+                                {
+                                    label: 'Carbs (g)',
+                                    data: carbsData,
+                                    borderColor: '#FF6B6B',
+                                    backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                                    tension: 0.4,
+                                    yAxisID: 'y1'
+                                },
+                                {
+                                    label: 'Fats (g)',
+                                    data: fatsData,
+                                    borderColor: '#4ECDC4',
+                                    backgroundColor: 'rgba(78, 205, 196, 0.1)',
+                                    tension: 0.4,
+                                    yAxisID: 'y1'
+                                },
+                                {
+                                    label: 'Proteins (g)',
+                                    data: proteinsData,
+                                    borderColor: '#45B7D1',
+                                    backgroundColor: 'rgba(69, 183, 209, 0.1)',
+                                    tension: 0.4,
+                                    yAxisID: 'y1'
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            interaction: {
+                                mode: 'index',
+                                intersect: false,
+                            },
+                            plugins: {
+                                legend: {
+                                    position: 'top',
+                                    labels: {
+                                        usePointStyle: true,
+                                        padding: 20
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    display: true,
+                                    title: {
+                                        display: true,
+                                        text: 'Date'
+                                    }
+                                },
+                                y: {
+                                    type: 'linear',
+                                    display: true,
+                                    position: 'left',
+                                    title: {
+                                        display: true,
+                                        text: 'Calories'
+                                    },
+                                    grid: {
+                                        drawOnChartArea: false,
+                                    },
+                                },
+                                y1: {
+                                    type: 'linear',
+                                    display: true,
+                                    position: 'right',
+                                    title: {
+                                        display: true,
+                                        text: 'Grams'
+                                    },
+                                    grid: {
+                                        drawOnChartArea: false,
+                                    },
+                                }
+                            }
+                        }
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching nutrition data:', error);
+                ctx.font = '14px Arial';
+                ctx.fillStyle = '#dc3545';
+                ctx.textAlign = 'center';
+                ctx.fillText('Error loading chart data', ctx.canvas.width / 2, ctx.canvas.height / 2);
+            });
+    }
+</script>
+{% endblock %}

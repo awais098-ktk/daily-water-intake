@@ -1,0 +1,238 @@
+{% extends 'base.html' %}
+
+{% block title %}Register - HydroMate{% endblock %}
+
+{% block extra_css %}
+<style>
+    .avatar-option {
+        cursor: pointer;
+        border: 3px solid transparent;
+        border-radius: 50%;
+        transition: all 0.3s ease;
+        width: 100px;
+        height: 100px;
+        object-fit: cover;
+        background-color: #f8f9fa;
+    }
+
+    .avatar-option:hover {
+        transform: scale(1.05);
+        border-color: var(--bs-primary);
+    }
+
+    .avatar-option.selected {
+        border-color: var(--bs-primary);
+        box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+    }
+
+    .gender-option {
+        cursor: pointer;
+        padding: 10px;
+        border: 2px solid #dee2e6;
+        border-radius: 5px;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+
+    .gender-option:hover {
+        background-color: #f8f9fa;
+    }
+
+    .gender-option.selected {
+        border-color: var(--bs-primary);
+        background-color: rgba(0, 123, 255, 0.1);
+    }
+
+    .gender-icon {
+        font-size: 2rem;
+        margin-bottom: 5px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Register</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('register') }}" enctype="multipart/form-data">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="username" class="form-label">Username</label>
+                                <input type="text" class="form-control" id="username" name="username" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="email" name="email" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Password</label>
+                                <input type="password" class="form-control" id="password" name="password" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="confirm_password" class="form-label">Confirm Password</label>
+                                <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Select Gender</label>
+                                <div class="row g-2">
+                                    <div class="col-4">
+                                        <div class="gender-option" data-gender="male" onclick="selectGender(this, 'male')">
+                                            <div class="gender-icon"><i class="bi bi-gender-male"></i></div>
+                                            <div>Male</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="gender-option" data-gender="female" onclick="selectGender(this, 'female')">
+                                            <div class="gender-icon"><i class="bi bi-gender-female"></i></div>
+                                            <div>Female</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="gender-option" data-gender="custom" onclick="selectGender(this, 'custom')">
+                                            <div class="gender-icon"><i class="bi bi-person"></i></div>
+                                            <div>Custom</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <input type="hidden" id="gender" name="gender" value="not_specified">
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Profile Picture</label>
+                                <div class="row g-2 mb-2 justify-content-center">
+                                    <div class="col-5">
+                                        <div class="text-center">
+                                            <img src="{{ url_for('static', filename='images/avatars/male_avatar.png') }}" class="avatar-option" data-avatar="male_avatar.png" onclick="selectGender(document.querySelector('[data-gender=\'male\']'), 'male')" id="male-avatar">
+                                            <div class="mt-2">Male</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-5">
+                                        <div class="text-center">
+                                            <img src="{{ url_for('static', filename='images/avatars/female_avatar.png') }}" class="avatar-option" data-avatar="female_avatar.png" onclick="selectGender(document.querySelector('[data-gender=\'female\']'), 'female')" id="female-avatar">
+                                            <div class="mt-2">Female</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-text text-center" id="avatar-message">Click an avatar to select your gender</div>
+                                <input type="hidden" id="selected_avatar" name="selected_avatar" value="male_avatar.png">
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="avatar" class="form-label">Upload Profile Picture</label>
+                                <div class="input-group">
+                                    <input type="file" class="form-control" id="avatar" name="avatar" accept="image/*" onchange="previewImage(this)">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('avatar').click()">
+                                        <i class="bi bi-upload"></i> Browse
+                                    </button>
+                                </div>
+                                <div class="form-text">Select an image from your device to use as your profile picture</div>
+                                <div id="image-preview-container" class="mt-2 text-center" style="display: none;">
+                                    <img id="image-preview" src="#" alt="Preview" class="img-thumbnail" style="max-height: 150px;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Register</button>
+                    </div>
+                </form>
+                <div class="mt-3 text-center">
+                    <p>Already have an account? <a href="{{ url_for('login') }}">Login here</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function selectGender(element, gender) {
+        // Remove selected class from all options
+        document.querySelectorAll('.gender-option').forEach(option => {
+            option.classList.remove('selected');
+        });
+
+        // Remove selected class from all avatars
+        document.querySelectorAll('.avatar-option').forEach(option => {
+            option.classList.remove('selected');
+        });
+
+        // Add selected class to clicked option
+        if (element) {
+            element.classList.add('selected');
+        }
+
+        // Update hidden input
+        document.getElementById('gender').value = gender;
+
+        // Update avatar selection based on gender
+        if (gender === 'male') {
+            document.getElementById('male-avatar').classList.add('selected');
+            document.getElementById('selected_avatar').value = 'male_avatar.png';
+            document.getElementById('avatar-message').textContent = '';
+            // Hide custom image preview if default avatar is selected
+            document.getElementById('image-preview-container').style.display = 'none';
+        } else if (gender === 'female') {
+            document.getElementById('female-avatar').classList.add('selected');
+            document.getElementById('selected_avatar').value = 'female_avatar.png';
+            document.getElementById('avatar-message').textContent = '';
+            // Hide custom image preview if default avatar is selected
+            document.getElementById('image-preview-container').style.display = 'none';
+        } else {
+            document.getElementById('avatar-message').textContent = 'Please upload your own avatar';
+            document.getElementById('selected_avatar').value = '';
+        }
+    }
+
+    function selectAvatar(element) {
+        // Remove selected class from all options
+        document.querySelectorAll('.avatar-option').forEach(option => {
+            option.classList.remove('selected');
+        });
+
+        // Add selected class to clicked option
+        element.classList.add('selected');
+
+        // Update hidden input
+        document.getElementById('selected_avatar').value = element.dataset.avatar;
+    }
+
+    function previewImage(input) {
+        const previewContainer = document.getElementById('image-preview-container');
+        const preview = document.getElementById('image-preview');
+
+        // Clear gender selection when custom image is uploaded
+        document.querySelectorAll('.gender-option').forEach(option => {
+            option.classList.remove('selected');
+        });
+        document.querySelectorAll('.avatar-option').forEach(option => {
+            option.classList.remove('selected');
+        });
+        document.getElementById('gender').value = 'custom';
+        document.getElementById('selected_avatar').value = '';
+        document.getElementById('avatar-message').textContent = 'Using custom profile picture';
+
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+                previewContainer.style.display = 'block';
+            }
+
+            reader.readAsDataURL(input.files[0]);
+        } else {
+            previewContainer.style.display = 'none';
+        }
+    }
+</script>
+{% endblock %}

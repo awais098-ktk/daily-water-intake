@@ -1,0 +1,366 @@
+{% extends 'base.html' %}
+
+{% block title %}Meal Containers - HydroMate{% endblock %}
+
+{% block extra_css %}
+<style>
+    .container-card {
+        border: 1px solid #e9ecef;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+        transition: all 0.3s;
+        position: relative;
+    }
+    
+    .container-card:hover {
+        border-color: var(--accent-color);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+    }
+    
+    .container-card.favorite {
+        border-left: 4px solid #FFD700;
+        background-color: #fffbf0;
+    }
+    
+    .meal-type-badge {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        font-size: 0.8rem;
+        padding: 4px 8px;
+        border-radius: 12px;
+    }
+    
+    .breakfast-badge { background-color: #FFE4B5; color: #8B4513; }
+    .lunch-badge { background-color: #F0E68C; color: #556B2F; }
+    .dinner-badge { background-color: #DDA0DD; color: #4B0082; }
+    .snack-badge { background-color: #98FB98; color: #006400; }
+    .meal-badge { background-color: #E6E6FA; color: #483D8B; }
+    
+    .nutrition-summary {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 15px;
+        margin-top: 15px;
+    }
+    
+    .nutrition-item {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+    
+    .nutrition-value {
+        font-weight: bold;
+        color: var(--accent-color);
+    }
+    
+    .container-actions {
+        margin-top: 15px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    
+    .favorite-star {
+        color: #FFD700;
+        cursor: pointer;
+        font-size: 1.2rem;
+        transition: transform 0.2s;
+    }
+    
+    .favorite-star:hover {
+        transform: scale(1.2);
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #6c757d;
+    }
+    
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 20px;
+        opacity: 0.5;
+    }
+    
+    .add-container-card {
+        border: 2px dashed #dee2e6;
+        background-color: transparent;
+        color: #6c757d;
+        text-align: center;
+        padding: 40px 20px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .add-container-card:hover {
+        border-color: var(--accent-color);
+        color: var(--accent-color);
+        background-color: rgba(77, 166, 255, 0.05);
+    }
+    
+    .container-image {
+        width: 80px;
+        height: 80px;
+        object-fit: cover;
+        border-radius: 8px;
+        margin-bottom: 15px;
+    }
+    
+    .container-placeholder {
+        width: 80px;
+        height: 80px;
+        background-color: #f8f9fa;
+        border: 2px dashed #dee2e6;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 15px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i class="bi bi-box-seam text-primary"></i> Meal Containers</h2>
+                    <p class="text-muted">Create and manage your favorite meal combinations</p>
+                </div>
+                <a href="{{ url_for('add_meal_container') }}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Add New Container
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {% if containers %}
+    <div class="row">
+        {% for container in containers %}
+        <div class="col-lg-6 col-xl-4">
+            <div class="container-card {{ 'favorite' if container.is_favorite else '' }}">
+                <!-- Meal Type Badge -->
+                <span class="meal-type-badge {{ container.meal_type }}-badge">
+                    {{ container.meal_type.title() }}
+                </span>
+                
+                <!-- Favorite Star -->
+                <div class="position-absolute" style="top: 15px; left: 15px;">
+                    {% if container.is_favorite %}
+                    <i class="bi bi-star-fill favorite-star"></i>
+                    {% endif %}
+                </div>
+                
+                <div class="text-center">
+                    <!-- Container Image -->
+                    {% if container.image_path %}
+                    <img src="{{ url_for('static', filename=container.image_path) }}" 
+                         alt="{{ container.name }}" class="container-image">
+                    {% else %}
+                    <div class="container-placeholder mx-auto">
+                        <i class="bi bi-box fs-2 text-muted"></i>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Container Info -->
+                    <h5 class="mb-2">{{ container.name }}</h5>
+                    {% if container.description %}
+                    <p class="text-muted small">{{ container.description }}</p>
+                    {% endif %}
+                </div>
+                
+                <!-- Nutrition Summary -->
+                <div class="nutrition-summary">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="nutrition-value fs-5">{{ "%.0f"|format(container.total_calories) }}</div>
+                            <small class="text-muted">Calories</small>
+                        </div>
+                        <div class="col-6">
+                            <div class="nutrition-value fs-5">{{ "%.1f"|format(container.total_carbs + container.total_fats + container.total_proteins) }}g</div>
+                            <small class="text-muted">Macros</small>
+                        </div>
+                    </div>
+                    
+                    <hr class="my-2">
+                    
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="text-danger">
+                                <strong>{{ "%.1f"|format(container.total_carbs) }}g</strong>
+                                <small class="d-block text-muted">Carbs</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="text-info">
+                                <strong>{{ "%.1f"|format(container.total_fats) }}g</strong>
+                                <small class="d-block text-muted">Fats</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="text-success">
+                                <strong>{{ "%.1f"|format(container.total_proteins) }}g</strong>
+                                <small class="d-block text-muted">Proteins</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Container Actions -->
+                <div class="container-actions">
+                    <form method="POST" action="{{ url_for('log_meal_container', container_id=container.id) }}" class="flex-grow-1">
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="bi bi-plus-circle"></i> Log Meal
+                        </button>
+                    </form>
+                    
+                    <div class="btn-group">
+                        <a href="#" class="btn btn-outline-primary btn-sm" title="Edit Container">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <button class="btn btn-outline-danger btn-sm" title="Delete Container" 
+                                onclick="confirmDelete('{{ container.name }}', {{ container.id }})">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Container Items (if any) -->
+                {% if container.meal_container_items %}
+                <div class="mt-3">
+                    <small class="text-muted">Contains:</small>
+                    <div class="mt-1">
+                        {% for item in container.meal_container_items[:3] %}
+                        <span class="badge bg-light text-dark me-1">
+                            {{ item.food_item.name }} ({{ "%.0f"|format(item.quantity_g) }}g)
+                        </span>
+                        {% endfor %}
+                        {% if container.meal_container_items|length > 3 %}
+                        <span class="badge bg-secondary">+{{ container.meal_container_items|length - 3 }} more</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+        
+        <!-- Add New Container Card -->
+        <div class="col-lg-6 col-xl-4">
+            <div class="container-card add-container-card" onclick="window.location.href='{{ url_for('add_meal_container') }}'">
+                <i class="bi bi-plus-circle fs-1 mb-3"></i>
+                <h5>Add New Container</h5>
+                <p class="mb-0">Create a new meal container</p>
+            </div>
+        </div>
+    </div>
+    
+    {% else %}
+    <!-- Empty State -->
+    <div class="empty-state">
+        <i class="bi bi-box-seam"></i>
+        <h4>No Meal Containers Yet</h4>
+        <p>Create your first meal container to quickly log your favorite meals and recipes.</p>
+        <a href="{{ url_for('add_meal_container') }}" class="btn btn-primary btn-lg">
+            <i class="bi bi-plus-circle"></i> Create Your First Container
+        </a>
+    </div>
+    {% endif %}
+    
+    <!-- Quick Actions -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-lightning-fill"></i> Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <a href="{{ url_for('eating_dashboard') }}" class="btn btn-outline-primary d-block mb-2">
+                                <i class="bi bi-arrow-left"></i> Back to Dashboard
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('food_search') }}" class="btn btn-outline-primary d-block mb-2">
+                                <i class="bi bi-search"></i> Search Foods
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('barcode_scanner') }}" class="btn btn-outline-primary d-block mb-2">
+                                <i class="bi bi-upc-scan"></i> Scan Barcode
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('nutrition_goals') }}" class="btn btn-outline-primary d-block mb-2">
+                                <i class="bi bi-target"></i> Nutrition Goals
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the meal container "<span id="containerName"></span>"?</p>
+                <p class="text-muted small">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="POST" id="deleteForm" class="d-inline">
+                    <button type="submit" class="btn btn-danger">Delete Container</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function confirmDelete(containerName, containerId) {
+        document.getElementById('containerName').textContent = containerName;
+        document.getElementById('deleteForm').action = `/eating/meal_containers/${containerId}/delete`;
+        
+        const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+        modal.show();
+    }
+    
+    // Toggle favorite status
+    function toggleFavorite(containerId) {
+        fetch(`/eating/meal_containers/${containerId}/favorite`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            }
+        })
+        .catch(error => {
+            console.error('Error toggling favorite:', error);
+        });
+    }
+</script>
+{% endblock %}

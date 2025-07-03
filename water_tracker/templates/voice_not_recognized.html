@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block title %}Voice Not Recognized - HydroMate{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-warning">
+                <h4 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Voice Not Recognized</h4>
+            </div>
+            <div class="card-body">
+                <p class="lead">We couldn't understand your voice input. Please try again or log your intake manually.</p>
+                
+                <div class="alert alert-danger">
+                    <strong>Error:</strong> {{ error }}
+                </div>
+                
+                {% if text %}
+                <div class="mb-4">
+                    <h5>Transcribed Text:</h5>
+                    <div class="border p-2 rounded bg-light">
+                        <p>{{ text }}</p>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('voice_input') }}" class="btn btn-primary">
+                        <i class="bi bi-mic"></i> Try Again
+                    </a>
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

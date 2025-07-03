@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Terms of Service - HydroMate{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="mb-0">Terms of Service</h2>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Last updated: {{ moment().format('MMMM DD, YYYY') }}</p>
+                    
+                    <h4>1. Acceptance of Terms</h4>
+                    <p>By using HydroMate, you agree to these Terms of Service. If you do not agree, please do not use our service.</p>
+
+                    <h4>2. Description of Service</h4>
+                    <p>HydroMate is a water intake tracking application that helps users:</p>
+                    <ul>
+                        <li>Monitor daily water consumption</li>
+                        <li>Set hydration goals</li>
+                        <li>Connect with fitness devices for activity-based recommendations</li>
+                        <li>Track progress over time</li>
+                    </ul>
+
+                    <h4>3. User Accounts</h4>
+                    <p>To use HydroMate, you must:</p>
+                    <ul>
+                        <li>Provide accurate account information</li>
+                        <li>Keep your login credentials secure</li>
+                        <li>Be responsible for all activity under your account</li>
+                        <li>Notify us of any unauthorized access</li>
+                    </ul>
+
+                    <h4>4. Acceptable Use</h4>
+                    <p>You agree to use HydroMate only for lawful purposes and in accordance with these terms. You will not:</p>
+                    <ul>
+                        <li>Use the service for any illegal activities</li>
+                        <li>Attempt to gain unauthorized access to our systems</li>
+                        <li>Interfere with the service's operation</li>
+                        <li>Share your account with others</li>
+                    </ul>
+
+                    <h4>5. Fitness Device Integration</h4>
+                    <p>When connecting fitness devices:</p>
+                    <ul>
+                        <li>You grant permission to access your activity data</li>
+                        <li>You can revoke this permission at any time</li>
+                        <li>We are not responsible for third-party device functionality</li>
+                        <li>Data accuracy depends on your device's measurements</li>
+                    </ul>
+
+                    <h4>6. Health Disclaimer</h4>
+                    <p><strong>Important:</strong> HydroMate is for informational purposes only and is not medical advice. Always consult healthcare professionals for medical guidance regarding hydration and health.</p>
+
+                    <h4>7. Data and Privacy</h4>
+                    <p>Your use of HydroMate is subject to our Privacy Policy, which explains how we collect, use, and protect your information.</p>
+
+                    <h4>8. Service Availability</h4>
+                    <p>We strive to keep HydroMate available, but we do not guarantee uninterrupted service. We may:</p>
+                    <ul>
+                        <li>Perform maintenance that temporarily affects availability</li>
+                        <li>Update features and functionality</li>
+                        <li>Modify or discontinue features with notice</li>
+                    </ul>
+
+                    <h4>9. Limitation of Liability</h4>
+                    <p>HydroMate is provided "as is" without warranties. We are not liable for any damages arising from your use of the service.</p>
+
+                    <h4>10. Termination</h4>
+                    <p>You may terminate your account at any time. We may terminate accounts that violate these terms.</p>
+
+                    <h4>11. Changes to Terms</h4>
+                    <p>We may update these terms occasionally. Continued use of HydroMate constitutes acceptance of updated terms.</p>
+
+                    <h4>12. Contact Information</h4>
+                    <p>For questions about these terms, contact us at:</p>
+                    <p><strong>Email:</strong> support@hydromate.app<br>
+                    <strong>Address:</strong> HydroMate Support Team</p>
+
+                    <div class="mt-4">
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-primary">Back to Dashboard</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,3 @@
+@echo off
+echo Opening SQLite shell for water_tracker.db...
+sqlite3 instance\water_tracker.db

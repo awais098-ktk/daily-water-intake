@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Widget Test</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        body {
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .weather-widget {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="mb-4">Weather Widget Test</h1>
+
+        <div class="card mb-4 weather-widget">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-cloud"></i> Weather & Hydration</h5>
+                <div>
+                    <input type="text" class="form-control form-control-sm d-inline-block" id="city-input" value="New York" style="width: 100px;">
+                    <button type="button" class="btn btn-sm btn-light location-btn" title="Get Location">
+                        <i class="bi bi-geo-alt"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-light refresh-weather" title="Refresh Weather Data">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Loading state -->
+                <div class="weather-loading text-center py-3">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2 mb-0">Fetching weather data...</p>
+                </div>
+
+                <!-- Error state -->
+                <div class="weather-error text-center py-3" style="display: none;">
+                    <i class="bi bi-exclamation-triangle text-warning fs-1"></i>
+                    <p class="mt-2 mb-0 weather-error-message">Weather API error: 404</p>
+                    <button class="btn btn-sm btn-primary mt-2 retry-weather">Try Again</button>
+                </div>
+
+                <!-- Content state -->
+                <div class="weather-content" style="display: none;">
+                    <div class="row align-items-center mb-3">
+                        <div class="col-md-6 text-center text-md-start">
+                            <h3 class="city-name mb-0">New York</h3>
+                            <p class="text-muted mb-0 current-date">May 19, 2025</p>
+                        </div>
+                        <div class="col-md-6 text-center text-md-end">
+                            <div class="d-flex align-items-center justify-content-center justify-content-md-end">
+                                <img src="" alt="Weather icon" class="weather-icon me-2" width="50">
+                                <div>
+                                    <h2 class="temperature mb-0">25°C</h2>
+                                    <p class="weather-description mb-0">Clear sky</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-6 col-md-3 text-center mb-3 mb-md-0">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <i class="bi bi-thermometer-half text-danger"></i>
+                                    <p class="mb-0">Feels like</p>
+                                    <h5 class="feels-like">26°C</h5>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3 text-center mb-3 mb-md-0">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <i class="bi bi-droplet-half text-primary"></i>
+                                    <p class="mb-0">Humidity</p>
+                                    <h5 class="humidity">60%</h5>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3 text-center">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <i class="bi bi-wind text-info"></i>
+                                    <p class="mb-0">Wind</p>
+                                    <h5 class="wind-speed">5 m/s</h5>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3 text-center">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <i class="bi bi-eye text-secondary"></i>
+                                    <p class="mb-0">Visibility</p>
+                                    <h5 class="visibility">10 km</h5>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mb-3">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0"><i class="bi bi-droplet"></i> Hydration Recommendation</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="recommendation-text">Based on the current weather and your activity level, we recommend drinking 2300 ml of water today.</p>
+                            <div class="progress">
+                                <div class="progress-bar bg-info" role="progressbar" style="width: 25%;" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">25%</div>
+                            </div>
+                            <div class="d-flex justify-content-between mt-1">
+                                <small class="text-muted">0 ml</small>
+                                <small class="text-muted recommendation-total">2300 ml</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const cityInput = document.getElementById('city-input');
+            const refreshBtn = document.querySelector('.refresh-weather');
+            const retryBtn = document.querySelector('.retry-weather');
+            const locationBtn = document.querySelector('.location-btn');
+
+            const loadingEl = document.querySelector('.weather-loading');
+            const errorEl = document.querySelector('.weather-error');
+            const contentEl = document.querySelector('.weather-content');
+            const errorMsgEl = document.querySelector('.weather-error-message');
+
+            // Function to show loading state
+            function showLoading() {
+                loadingEl.style.display = 'block';
+                errorEl.style.display = 'none';
+                contentEl.style.display = 'none';
+            }
+
+            // Function to show error state
+            function showError(message) {
+                loadingEl.style.display = 'none';
+                errorEl.style.display = 'block';
+                contentEl.style.display = 'none';
+                errorMsgEl.textContent = message;
+            }
+
+            // Function to show content state
+            function showContent() {
+                loadingEl.style.display = 'none';
+                errorEl.style.display = 'none';
+                contentEl.style.display = 'block';
+            }
+
+            // Function to update weather UI
+            function updateWeatherUI(data) {
+                // Update city name
+                document.querySelector('.city-name').textContent = data.name;
+
+                // Update date
+                const date = new Date();
+                document.querySelector('.current-date').textContent = date.toLocaleDateString('en-US', {
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric'
+                });
+
+                // Update temperature
+                document.querySelector('.temperature').textContent = `${Math.round(data.main.temp)}°C`;
+
+                // Update weather description
+                document.querySelector('.weather-description').textContent = data.weather[0].description;
+
+                // Update weather icon
+                const iconCode = data.weather[0].icon;
+                const iconUrl = `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
+                document.querySelector('.weather-icon').src = iconUrl;
+
+                // Update feels like
+                document.querySelector('.feels-like').textContent = `${Math.round(data.main.feels_like)}°C`;
+
+                // Update humidity
+                document.querySelector('.humidity').textContent = `${data.main.humidity}%`;
+
+                // Update wind speed
+                document.querySelector('.wind-speed').textContent = `${data.wind.speed} m/s`;
+
+                // Update visibility
+                const visibilityKm = data.visibility / 1000;
+                document.querySelector('.visibility').textContent = `${visibilityKm} km`;
+            }
+
+            // Function to update hydration UI
+            function updateHydrationUI(data) {
+                // Update recommendation text
+                document.querySelector('.recommendation-text').textContent = data.explanation;
+
+                // Update total
+                document.querySelector('.recommendation-total').textContent = `${data.total} ml`;
+
+                // Update progress bar
+                const progressBar = document.querySelector('.progress-bar');
+                const currentProgress = 25; // This would come from user's actual intake
+                progressBar.style.width = `${currentProgress}%`;
+                progressBar.textContent = `${currentProgress}%`;
+                progressBar.setAttribute('aria-valuenow', currentProgress);
+            }
+
+            // Function to fetch weather data
+            async function fetchWeatherData() {
+                // Get the current city from the input field
+                const currentCity = cityInput.value.trim() || 'New York';
+                console.log(`City input value: "${currentCity}"`);
+
+                // Show loading state
+                showLoading();
+
+                try {
+                    console.log(`Fetching weather data for city: ${currentCity}`);
+
+                    // API key
+                    const apiKey = '51697047df57d0d77efa8d330e6fb44d';
+
+                    // Handle country names by converting to city names
+                    let cityToUse = currentCity;
+                    if (currentCity.toLowerCase() === 'pakistan') {
+                        cityToUse = 'Lahore';
+                        console.log('Changed country name "Pakistan" to city name "Lahore"');
+                    }
+
+                    // Construct the URL directly as recommended
+                    const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(cityToUse)}&appid=${apiKey}&units=metric`;
+                    console.log('Using URL:', url.replace(apiKey, 'API_KEY'));
+
+                    // Fetch weather data
+                    const response = await fetch(url);
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        console.error('Weather API error response:', errorData);
+                        throw new Error(errorData.message || `Weather API error: ${response.status}`);
+                    }
+
+                    const weatherData = await response.json();
+                    console.log('Weather data received:', weatherData);
+
+                    // Calculate hydration recommendation
+                    const baseHydration = 2000;
+                    const temperature = weatherData.main?.temp || 25;
+                    const humidity = weatherData.main?.humidity || 60;
+                    const weatherCondition = weatherData.weather?.[0]?.description || 'clear sky';
+
+                    let tempAdjustment = 0;
+                    if (temperature > 30) {
+                        tempAdjustment = 300;
+                    } else if (temperature > 25) {
+                        tempAdjustment = 200;
+                    } else if (temperature > 20) {
+                        tempAdjustment = 100;
+                    }
+
+                    let humidityAdjustment = 0;
+                    if (humidity > 80) {
+                        humidityAdjustment = 100;
+                    } else if (humidity > 60) {
+                        humidityAdjustment = 50;
+                    }
+
+                    const activityAdjustment = 100;
+                    const total = baseHydration + tempAdjustment + humidityAdjustment + activityAdjustment;
+
+                    const recommendationData = {
+                        base: baseHydration,
+                        temperature: temperature,
+                        humidity: humidity,
+                        weather_condition: weatherCondition,
+                        temp_adjustment: tempAdjustment,
+                        humidity_adjustment: humidityAdjustment,
+                        activity_adjustment: activityAdjustment,
+                        total: total,
+                        explanation: `Based on the current weather (${temperature}°C, ${humidity}% humidity, ${weatherCondition}) and your activity level, we recommend drinking ${total} ml of water today.`
+                    };
+
+                    // Update UI
+                    updateWeatherUI(weatherData);
+                    updateHydrationUI(recommendationData);
+                    showContent();
+
+                } catch (error) {
+                    console.error('Error fetching data:', error);
+                    showError(error.message || 'Weather API error: 404');
+                }
+            }
+
+            // Event listeners
+            refreshBtn.addEventListener('click', fetchWeatherData);
+            retryBtn.addEventListener('click', fetchWeatherData);
+
+            cityInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    fetchWeatherData();
+                }
+            });
+
+            locationBtn.addEventListener('click', function() {
+                // For demonstration purposes, let's use a different city
+                // In a real app, this would use the browser's geolocation API and reverse geocoding
+                const cities = ['London', 'Tokyo', 'Paris', 'Sydney', 'Dubai', 'Lahore', 'Karachi'];
+                const randomCity = cities[Math.floor(Math.random() * cities.length)];
+
+                console.log(`Location button clicked. Setting city to: ${randomCity}`);
+                cityInput.value = randomCity;
+                fetchWeatherData();
+            });
+
+            // Initial fetch
+            fetchWeatherData();
+        });
+    </script>
+</body>
+</html>

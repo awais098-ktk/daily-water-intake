@@ -1,0 +1,398 @@
+{% extends 'base.html' %}
+
+{% block title %}Nutrition Goals - HydroMate{% endblock %}
+
+{% block extra_css %}
+<style>
+    .goal-card {
+        border-left: 4px solid var(--accent-color);
+        margin-bottom: 20px;
+    }
+    
+    .goal-input {
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        transition: border-color 0.2s;
+    }
+    
+    .goal-input:focus {
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 0.2rem rgba(77, 166, 255, 0.25);
+    }
+    
+    .bmr-calculator {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .activity-level-card {
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 10px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .activity-level-card:hover {
+        border-color: var(--accent-color);
+        background-color: rgba(77, 166, 255, 0.1);
+    }
+    
+    .activity-level-card.selected {
+        border-color: var(--accent-color);
+        background-color: rgba(77, 166, 255, 0.2);
+    }
+    
+    .macro-recommendation {
+        background-color: #e7f3ff;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .recommendation-badge {
+        background-color: var(--accent-color);
+        color: white;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2><i class="bi bi-target text-primary"></i> Nutrition Goals</h2>
+            <p class="text-muted">Set your daily nutrition targets and let us help you reach them</p>
+        </div>
+    </div>
+
+    <form method="POST">
+        <div class="row">
+            <!-- Left Column - Personal Information -->
+            <div class="col-lg-6">
+                <div class="card goal-card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-person-fill"></i> Personal Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="weight_kg" class="form-label">Weight (kg)</label>
+                                    <input type="number" class="form-control goal-input" id="weight_kg" name="weight_kg" 
+                                           step="0.1" value="{{ goals.weight_kg if goals and goals.weight_kg else '' }}"
+                                           placeholder="70.0">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="height_cm" class="form-label">Height (cm)</label>
+                                    <input type="number" class="form-control goal-input" id="height_cm" name="height_cm" 
+                                           step="0.1" value="{{ goals.height_cm if goals and goals.height_cm else '' }}"
+                                           placeholder="170.0">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="age" class="form-label">Age</label>
+                                    <input type="number" class="form-control goal-input" id="age" name="age" 
+                                           value="{{ goals.age if goals and goals.age else '' }}"
+                                           placeholder="25">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="goal_type" class="form-label">Goal</label>
+                                    <select class="form-select goal-input" id="goal_type" name="goal_type">
+                                        <option value="lose" {{ 'selected' if goals and goals.goal_type == 'lose' else '' }}>Lose Weight</option>
+                                        <option value="maintain" {{ 'selected' if goals and goals.goal_type == 'maintain' else '' }}>Maintain Weight</option>
+                                        <option value="gain" {{ 'selected' if goals and goals.goal_type == 'gain' else '' }}>Gain Weight</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Activity Level -->
+                <div class="card goal-card">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="bi bi-activity"></i> Activity Level</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="activity-levels">
+                            <div class="activity-level-card" data-value="sedentary">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>Sedentary</strong>
+                                        <small class="d-block text-muted">Little or no exercise</small>
+                                    </div>
+                                    <span class="recommendation-badge">1.2x</span>
+                                </div>
+                            </div>
+                            
+                            <div class="activity-level-card" data-value="light">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>Light Activity</strong>
+                                        <small class="d-block text-muted">Light exercise 1-3 days/week</small>
+                                    </div>
+                                    <span class="recommendation-badge">1.375x</span>
+                                </div>
+                            </div>
+                            
+                            <div class="activity-level-card" data-value="moderate">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>Moderate Activity</strong>
+                                        <small class="d-block text-muted">Moderate exercise 3-5 days/week</small>
+                                    </div>
+                                    <span class="recommendation-badge">1.55x</span>
+                                </div>
+                            </div>
+                            
+                            <div class="activity-level-card" data-value="active">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>Very Active</strong>
+                                        <small class="d-block text-muted">Hard exercise 6-7 days/week</small>
+                                    </div>
+                                    <span class="recommendation-badge">1.725x</span>
+                                </div>
+                            </div>
+                            
+                            <div class="activity-level-card" data-value="very_active">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>Extremely Active</strong>
+                                        <small class="d-block text-muted">Very hard exercise, physical job</small>
+                                    </div>
+                                    <span class="recommendation-badge">1.9x</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <input type="hidden" id="activity_level" name="activity_level" 
+                               value="{{ goals.activity_level if goals else 'moderate' }}">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column - Nutrition Goals -->
+            <div class="col-lg-6">
+                <!-- BMR Calculator -->
+                <div class="bmr-calculator">
+                    <h6><i class="bi bi-calculator"></i> Calorie Recommendation</h6>
+                    <div id="bmr-result" class="text-center">
+                        <div class="fs-4 text-primary" id="recommended-calories">Calculate BMR</div>
+                        <small class="text-muted">Enter your details to get personalized recommendations</small>
+                    </div>
+                    <button type="button" class="btn btn-outline-primary btn-sm mt-2" onclick="calculateBMR()">
+                        <i class="bi bi-calculator"></i> Calculate Recommendations
+                    </button>
+                </div>
+
+                <!-- Daily Goals -->
+                <div class="card goal-card">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0"><i class="bi bi-bullseye"></i> Daily Nutrition Goals</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label for="daily_calories" class="form-label">Daily Calories</label>
+                                    <input type="number" class="form-control goal-input" id="daily_calories" name="daily_calories" 
+                                           value="{{ goals.daily_calories if goals else 2000 }}" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="daily_carbs" class="form-label">Carbs (g)</label>
+                                    <input type="number" class="form-control goal-input" id="daily_carbs" name="daily_carbs" 
+                                           step="0.1" value="{{ goals.daily_carbs if goals else 250 }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="daily_fats" class="form-label">Fats (g)</label>
+                                    <input type="number" class="form-control goal-input" id="daily_fats" name="daily_fats" 
+                                           step="0.1" value="{{ goals.daily_fats if goals else 65 }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="daily_proteins" class="form-label">Proteins (g)</label>
+                                    <input type="number" class="form-control goal-input" id="daily_proteins" name="daily_proteins" 
+                                           step="0.1" value="{{ goals.daily_proteins if goals else 50 }}" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="daily_fiber" class="form-label">Fiber (g)</label>
+                                    <input type="number" class="form-control goal-input" id="daily_fiber" name="daily_fiber" 
+                                           step="0.1" value="{{ goals.daily_fiber if goals else 25 }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="daily_sugar" class="form-label">Sugar (g)</label>
+                                    <input type="number" class="form-control goal-input" id="daily_sugar" name="daily_sugar" 
+                                           step="0.1" value="{{ goals.daily_sugar if goals else 50 }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="daily_sodium" class="form-label">Sodium (mg)</label>
+                                    <input type="number" class="form-control goal-input" id="daily_sodium" name="daily_sodium" 
+                                           step="0.1" value="{{ goals.daily_sodium if goals else 2300 }}" required>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Macro Recommendations -->
+                <div class="macro-recommendation">
+                    <h6><i class="bi bi-pie-chart"></i> Macro Distribution Recommendations</h6>
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="text-primary">
+                                <strong>45-65%</strong>
+                                <small class="d-block">Carbohydrates</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="text-success">
+                                <strong>20-35%</strong>
+                                <small class="d-block">Fats</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="text-info">
+                                <strong>10-35%</strong>
+                                <small class="d-block">Proteins</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="row mt-4">
+            <div class="col-12 text-center">
+                <button type="submit" class="btn btn-primary btn-lg me-3">
+                    <i class="bi bi-check-circle"></i> Save Goals
+                </button>
+                <a href="{{ url_for('eating_dashboard') }}" class="btn btn-outline-secondary btn-lg">
+                    <i class="bi bi-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Activity level selection
+    document.addEventListener('DOMContentLoaded', function() {
+        const activityCards = document.querySelectorAll('.activity-level-card');
+        const activityInput = document.getElementById('activity_level');
+        
+        // Set initial selection
+        const currentActivity = activityInput.value;
+        activityCards.forEach(card => {
+            if (card.dataset.value === currentActivity) {
+                card.classList.add('selected');
+            }
+        });
+        
+        // Handle clicks
+        activityCards.forEach(card => {
+            card.addEventListener('click', function() {
+                // Remove selection from all cards
+                activityCards.forEach(c => c.classList.remove('selected'));
+                
+                // Add selection to clicked card
+                this.classList.add('selected');
+                
+                // Update hidden input
+                activityInput.value = this.dataset.value;
+            });
+        });
+    });
+    
+    // BMR Calculator
+    function calculateBMR() {
+        const weight = parseFloat(document.getElementById('weight_kg').value);
+        const height = parseFloat(document.getElementById('height_cm').value);
+        const age = parseInt(document.getElementById('age').value);
+        const gender = '{{ current_user.gender }}';
+        const activityLevel = document.getElementById('activity_level').value;
+        const goalType = document.getElementById('goal_type').value;
+        
+        if (!weight || !height || !age) {
+            alert('Please enter your weight, height, and age to calculate BMR');
+            return;
+        }
+        
+        // Calculate BMR using Mifflin-St Jeor Equation
+        let bmr;
+        if (gender === 'male') {
+            bmr = 10 * weight + 6.25 * height - 5 * age + 5;
+        } else {
+            bmr = 10 * weight + 6.25 * height - 5 * age - 161;
+        }
+        
+        // Apply activity multiplier
+        const activityMultipliers = {
+            'sedentary': 1.2,
+            'light': 1.375,
+            'moderate': 1.55,
+            'active': 1.725,
+            'very_active': 1.9
+        };
+        
+        let tdee = bmr * activityMultipliers[activityLevel];
+        
+        // Adjust for goal
+        if (goalType === 'lose') {
+            tdee -= 500; // 500 calorie deficit for 1 lb/week loss
+        } else if (goalType === 'gain') {
+            tdee += 500; // 500 calorie surplus for 1 lb/week gain
+        }
+        
+        // Update the display
+        document.getElementById('recommended-calories').textContent = Math.round(tdee) + ' calories';
+        
+        // Update the form field
+        document.getElementById('daily_calories').value = Math.round(tdee);
+        
+        // Calculate macro recommendations (45-65% carbs, 20-35% fats, 10-35% proteins)
+        const carbsGrams = Math.round((tdee * 0.55) / 4); // 55% of calories from carbs, 4 cal/g
+        const fatsGrams = Math.round((tdee * 0.25) / 9); // 25% of calories from fats, 9 cal/g
+        const proteinsGrams = Math.round((tdee * 0.20) / 4); // 20% of calories from proteins, 4 cal/g
+        
+        document.getElementById('daily_carbs').value = carbsGrams;
+        document.getElementById('daily_fats').value = fatsGrams;
+        document.getElementById('daily_proteins').value = proteinsGrams;
+    }
+</script>
+{% endblock %}

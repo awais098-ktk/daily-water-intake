@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block title %}Container Recognized - HydroMate{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0"><i class="bi bi-check-circle"></i> Container Recognized!</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <img src="{{ url_for('static', filename=image_path) }}" class="img-fluid rounded" alt="Container Image">
+                    </div>
+                    <div class="col-md-6">
+                        <h5>{{ container.name }}</h5>
+                        <p class="lead">Volume: {{ container.volume }} ml</p>
+
+                        <form method="POST" action="{{ url_for('log_water_with_container', container_id=container.id) }}">
+                            <div class="mb-3">
+                                <label for="drink_type" class="form-label">Drink Type:</label>
+                                <select class="form-select" id="drink_type" name="drink_type_id">
+                                    {% for drink_type in drink_types %}
+                                    <option value="{{ drink_type.id }}" {% if drink_type.id == container.drink_type_id %}selected{% endif %}>{{ drink_type.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="bi bi-plus-circle"></i> Log {{ container.volume }} ml
+                                </button>
+                                <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">Cancel</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

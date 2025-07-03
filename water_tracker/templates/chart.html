@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+
+{% block title %}Water Intake Chart - HydroMate{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">Water Intake - Last 7 Days</h4>
+            </div>
+            <div class="card-body">
+                <div class="chart-container" style="position: relative; height:400px;">
+                    <canvas id="waterIntakeChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">Weekly Comparison</h4>
+            </div>
+            <div class="card-body">
+                <div class="chart-container" style="position: relative; height:300px;">
+                    <canvas id="weeklyComparisonChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">Statistics</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-6 mb-3">
+                        <div class="stat-card p-3 border rounded text-center">
+                            <h2 class="stat-value">{{ chart_data.amounts|sum }}</h2>
+                            <p class="stat-label mb-0">Weekly Total</p>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="stat-card p-3 border rounded text-center">
+                            <h2 class="stat-value">{{ (chart_data.amounts|sum / 7)|round|int }}</h2>
+                            <p class="stat-label mb-0">Daily Average</p>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="stat-card p-3 border rounded text-center">
+                            <h2 class="stat-value">{{ chart_data.amounts|max }}</h2>
+                            <p class="stat-label mb-0">Best Day</p>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="stat-card p-3 border rounded text-center">
+                            {% set percent = ((chart_data.amounts|sum - chart_data.lastWeek|sum) / (chart_data.lastWeek|sum or 1) * 100)|round|int %}
+                            <h2 class="stat-value {{ 'text-success' if percent > 0 else 'text-danger' if percent < 0 else '' }}">
+                                {{ percent }}%
+                            </h2>
+                            <p class="stat-label mb-0">vs Last Week</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-4 text-center">
+    <a href="{{ url_for('dashboard') }}" class="btn btn-primary">
+        <i class="bi bi-arrow-left"></i> Back to Dashboard
+    </a>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-value {
+        font-weight: bold;
+        color: var(--accent-color);
+        font-size: 2rem;
+    }
+
+    .text-success {
+        color: #28a745 !important;
+    }
+
+    .text-danger {
+        color: #dc3545 !important;
+    }
+
+    .stat-label {
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Chart data from Flask
+        const chartData = {{ chart_data|tojson }};
+
+        // Create charts
+        createWaterIntakeChart(chartData);
+        createWeeklyComparisonChart(chartData);
+    });
+</script>
+{% endblock %}

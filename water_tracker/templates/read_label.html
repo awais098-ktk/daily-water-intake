@@ -1,0 +1,417 @@
+{% extends 'base.html' %}
+
+{% block title %}Read Label - HydroMate{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">Label Reading (OCR)</h4>
+            </div>
+            <div class="card-body">
+                <p class="lead">Take a photo of a bottle or can label, and we'll try to read the volume!</p>
+
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> For best results:
+                    <ul>
+                        <li>Make sure the label is well-lit and clearly visible</li>
+                        <li>Focus on the part of the label that shows the volume (ml, L, oz, etc.)</li>
+                        <li>Hold the camera steady and close to the label</li>
+                    </ul>
+                </div>
+
+                <form method="POST" action="{{ url_for('read_label') }}" enctype="multipart/form-data" id="label-form">
+                    <div class="mb-3">
+                        <label for="label_image" class="form-label">Label Image</label>
+                        <input type="file" class="form-control" id="label_image" name="label_image" accept="image/*" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="use_camera" onchange="toggleCamera()">
+                            <label class="form-check-label" for="use_camera">
+                                Use Camera
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="camera_container" style="display: none;" class="mb-3">
+                        <div class="text-center">
+                            <video id="video" width="100%" height="auto" autoplay></video>
+                            <canvas id="canvas" style="display: none;"></canvas>
+                            <button type="button" id="capture_btn" class="btn btn-primary mt-2">
+                                <i class="bi bi-camera"></i> Capture Photo
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary" id="read-label-btn">Read Label</button>
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+
+                <!-- Loading indicator (initially hidden) -->
+                <div id="loading-section" class="mt-4 text-center" style="display: none;">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="spinner-border text-primary mb-3" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <h5>Processing your image...</h5>
+                            <p class="text-muted">Please wait while we analyze the label with n8n webhook.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Results section (initially hidden) -->
+                <div id="results-section" class="mt-4" style="display: none;">
+                    <div class="card">
+                        <div class="card-header bg-success text-white">
+                            <h4 class="mb-0"><i class="bi bi-check-circle"></i> Label Recognized!</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <img id="result-image" src="" class="img-fluid rounded" alt="Label Image">
+                                </div>
+                                <div class="col-md-6">
+                                    <h5>Volume Detected: <span id="volume-detected">0</span></h5>
+
+                                    <form id="log-form">
+                                        <div class="mb-3">
+                                            <label for="volume_display" class="form-label">Volume (ml):</label>
+                                            <div class="form-control" id="volume_display">0</div>
+                                            <input type="hidden" id="volume_input" name="volume" value="0">
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="drink_type_display" class="form-label">Drink Type:</label>
+                                            <div class="form-control" id="drink_type_display">-</div>
+                                            <input type="hidden" id="drink_type_id" name="drink_type_id" value="1">
+                                        </div>
+
+                                        <div class="d-grid gap-2">
+                                            <button type="button" class="btn btn-success" id="log-result-btn">
+                                                <i class="bi bi-plus-circle"></i> Log Intake
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary" id="try-again-btn">
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    </form>
+
+                                    <div class="mt-4">
+                                        <h6>Extracted Text:</h6>
+                                        <div class="border p-2 rounded bg-light">
+                                            <pre id="result-text" style="white-space: pre-wrap; font-size: 0.8rem;">-</pre>
+                                            <div class="mt-2">
+                                                <span class="badge bg-secondary">
+                                                    <i class="bi bi-robot"></i> n8n Webhook
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Error section (initially hidden) -->
+                <div id="error-section" class="mt-4" style="display: none;">
+                    <div class="alert alert-danger">
+                        <h5><i class="bi bi-exclamation-triangle"></i> Error Processing Image</h5>
+                        <p id="error-message">An error occurred while processing the image.</p>
+                        <button type="button" class="btn btn-outline-danger mt-2" id="error-try-again-btn">
+                            Try Again
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let video = document.getElementById('video');
+    let canvas = document.getElementById('canvas');
+    let captureButton = document.getElementById('capture_btn');
+    let fileInput = document.getElementById('label_image');
+    let labelForm = document.getElementById('label-form');
+    let readLabelBtn = document.getElementById('read-label-btn');
+    let loadingSection = document.getElementById('loading-section');
+    let resultsSection = document.getElementById('results-section');
+    let errorSection = document.getElementById('error-section');
+    let errorMessage = document.getElementById('error-message');
+    let errorTryAgainBtn = document.getElementById('error-try-again-btn');
+    let resultImage = document.getElementById('result-image');
+    let volumeDetected = document.getElementById('volume-detected');
+    let volumeDisplay = document.getElementById('volume_display');
+    let volumeInput = document.getElementById('volume_input');
+    let drinkTypeDisplay = document.getElementById('drink_type_display');
+    let drinkTypeId = document.getElementById('drink_type_id');
+    let resultText = document.getElementById('result-text');
+    let logResultBtn = document.getElementById('log-result-btn');
+    let tryAgainBtn = document.getElementById('try-again-btn');
+    let stream = null;
+
+    // Map of drink types to their IDs (will be populated dynamically)
+    const drinkTypeMap = {
+        'WATER': 1,
+        'TEA': 2,
+        'COFFEE': 3,
+        'MILK': 4,
+        'JUICE': 5,
+        'SODA': 6,
+        'PEPSI': 7
+    };
+
+    // n8n webhook URL
+    const webhookUrl = "http://localhost:5678/webhook-test/f22cc1d4-3482-465a-97d6-478411c29099";
+
+    function toggleCamera() {
+        let useCamera = document.getElementById('use_camera').checked;
+        let cameraContainer = document.getElementById('camera_container');
+
+        if (useCamera) {
+            cameraContainer.style.display = 'block';
+            startCamera();
+        } else {
+            cameraContainer.style.display = 'none';
+            stopCamera();
+        }
+    }
+
+    function startCamera() {
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(function(s) {
+                    stream = s;
+                    video.srcObject = stream;
+                })
+                .catch(function(error) {
+                    console.error("Camera error:", error);
+                    alert("Could not access camera. Please check permissions.");
+                    document.getElementById('use_camera').checked = false;
+                    toggleCamera();
+                });
+        } else {
+            alert("Your browser doesn't support camera access");
+            document.getElementById('use_camera').checked = false;
+            toggleCamera();
+        }
+    }
+
+    function stopCamera() {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+            video.srcObject = null;
+        }
+    }
+
+    captureButton.addEventListener('click', function() {
+        let context = canvas.getContext('2d');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        // Convert canvas to file
+        canvas.toBlob(function(blob) {
+            let file = new File([blob], "camera_capture.jpg", { type: "image/jpeg" });
+
+            // Create a FileList-like object
+            let dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            fileInput.files = dataTransfer.files;
+
+            // Show success message
+            alert("Photo captured successfully!");
+        }, 'image/jpeg');
+    });
+
+    // Function to get drink type ID from name
+    function getDrinkTypeId(drinkTypeName) {
+        // Convert to uppercase for case-insensitive matching
+        const upperDrinkType = drinkTypeName.toUpperCase();
+
+        // Check if we have this drink type in our map
+        if (drinkTypeMap[upperDrinkType] !== undefined) {
+            return drinkTypeMap[upperDrinkType];
+        }
+
+        // Handle partial matches
+        for (const [key, value] of Object.entries(drinkTypeMap)) {
+            if (upperDrinkType.includes(key) || key.includes(upperDrinkType)) {
+                return value;
+            }
+        }
+
+        // Default to water if no match
+        return 1;
+    }
+
+    // Handle form submission
+    labelForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        // Check if a file is selected
+        if (!fileInput.files || !fileInput.files[0]) {
+            alert('Please select an image file');
+            return;
+        }
+
+        // Create FormData object
+        const formData = new FormData();
+        formData.append('label_image', fileInput.files[0]);
+
+        // Show loading state
+        readLabelBtn.disabled = true;
+        readLabelBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+
+        // Hide the form and show the loading section
+        labelForm.style.display = 'none';
+        loadingSection.style.display = 'block';
+
+        // Hide any previous results or errors
+        resultsSection.style.display = 'none';
+        errorSection.style.display = 'none';
+
+        console.log('Sending image to server for n8n webhook processing...');
+
+        // Set a timeout to handle very long requests
+        const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Request timed out after 30 seconds')), 30000);
+        });
+
+        // Send the image to the server, which will then send the image path to the n8n webhook
+        Promise.race([
+            fetch('{{ url_for("read_label") }}', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            }),
+            timeoutPromise
+        ])
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Success:', data);
+
+            // Hide the loading section
+            loadingSection.style.display = 'none';
+
+            if (!data.success && data.error) {
+                throw new Error(data.error);
+            }
+
+            // Get the local image path from the response
+            let localImagePath = data.local_image_path || '';
+
+            // If we have a local image path, use it directly
+            if (localImagePath) {
+                // Create a URL that points to the local file
+                resultImage.src = `/images/${localImagePath.split('/').pop()}`;
+                console.log('Using local image path:', resultImage.src);
+            } else {
+                // Fallback to the image URL from the response
+                resultImage.src = data.image_url;
+                console.log('Using image URL:', data.image_url);
+            }
+
+            // Extract volume from the response
+            let volume = data.volume || '0';
+            // Remove any non-numeric characters except digits
+            let volumeValue = volume.replace(/[^0-9]/g, '');
+
+            // Get drink type from the response
+            let drinkType = data.drinktype || 'Water';
+
+            // Display the volume and populate the input field
+            volumeDetected.textContent = volume;
+            volumeDisplay.textContent = volumeValue + " ml";
+            volumeInput.value = volumeValue;
+
+            // Update the drink type display and hidden input
+            drinkTypeDisplay.textContent = drinkType;
+            drinkTypeId.value = getDrinkTypeId(drinkType);
+
+            // Display the extracted text
+            resultText.textContent = data.text || `${drinkType} ${volume}`;
+
+            // Show the results section
+            resultsSection.style.display = 'block';
+
+            // Reset button state
+            readLabelBtn.disabled = false;
+            readLabelBtn.innerHTML = 'Read Label';
+
+            // Set up the log result button to submit the form
+            logResultBtn.onclick = function() {
+                // Create a form to submit
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '{{ url_for("log_from_label") }}';
+
+                // Add volume input
+                const volumeField = document.createElement('input');
+                volumeField.type = 'hidden';
+                volumeField.name = 'volume';
+                volumeField.value = volumeInput.value;
+                form.appendChild(volumeField);
+
+                // Add drink type input
+                const drinkTypeField = document.createElement('input');
+                drinkTypeField.type = 'hidden';
+                drinkTypeField.name = 'drink_type_id';
+                drinkTypeField.value = drinkTypeId.value;
+                form.appendChild(drinkTypeField);
+
+                // Append form to body and submit
+                document.body.appendChild(form);
+                form.submit();
+            };
+        })
+        .catch(error => {
+            console.error('Error:', error);
+
+            // Hide the loading section
+            loadingSection.style.display = 'none';
+
+            // Show the error section
+            errorMessage.textContent = error.message || 'Unknown error occurred';
+            errorSection.style.display = 'block';
+
+            // Set up the try again button
+            errorTryAgainBtn.onclick = function() {
+                errorSection.style.display = 'none';
+                labelForm.style.display = 'block';
+                readLabelBtn.disabled = false;
+                readLabelBtn.innerHTML = 'Read Label';
+            };
+        });
+    });
+
+    // Handle "Try Again" button
+    tryAgainBtn.addEventListener('click', function() {
+        // Hide results and show form
+        resultsSection.style.display = 'none';
+        labelForm.style.display = 'block';
+
+        // Reset form
+        fileInput.value = '';
+    });
+
+    // Stop camera when leaving the page
+    window.addEventListener('beforeunload', stopCamera);
+</script>
+{% endblock %}

@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+
+{% block title %}Container Not Recognized - HydroMate{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header {% if detected_drink_id %}bg-success{% else %}bg-warning{% endif %}">
+                <h4 class="mb-0">
+                    {% if detected_drink_id %}
+                    <i class="bi bi-check-circle"></i> Drink Type Detected
+                    {% else %}
+                    <i class="bi bi-exclamation-triangle"></i> Container Not Recognized
+                    {% endif %}
+                </h4>
+            </div>
+            <div class="card-body">
+                {% if detected_drink_id %}
+                <p class="lead">We detected a <strong>{{ detected_drink_type }}</strong> container! Please confirm the details below.</p>
+                {% else %}
+                <p class="lead">We couldn't recognize this container. Would you like to calibrate it?</p>
+                {% endif %}
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <!-- Display the container image with error handling -->
+                        <div class="text-center mb-3">
+                            {% if image_path %}
+                                {% if 'pepsi' in image_path|lower %}
+                                    <!-- Special handling for Pepsi cans -->
+                                    <img src="{{ url_for('static', filename='uploads/containers/pepsi_can.png') }}" class="img-fluid rounded" alt="Pepsi Can"
+                                         onerror="this.onerror=null; this.src='{{ url_for('static', filename='images/container_placeholder.png') }}'; console.log('Error loading Pepsi image');">
+                                {% elif image_path.startswith('uploads/') %}
+                                    <img src="{{ url_for('static', filename=image_path) }}" class="img-fluid rounded" alt="Container Image"
+                                         onerror="this.onerror=null; this.src='{{ url_for('static', filename='images/container_placeholder.png') }}'; console.log('Error loading image: {{ image_path }}');">
+                                {% else %}
+                                    <img src="{{ url_for('static', filename='uploads/' + image_path) }}" class="img-fluid rounded" alt="Container Image"
+                                         onerror="this.onerror=null; this.src='{{ url_for('static', filename='images/container_placeholder.png') }}'; console.log('Error loading image: uploads/{{ image_path }}');">
+                                {% endif %}
+                            {% else %}
+                                <img src="{{ url_for('static', filename='images/container_placeholder.png') }}" class="img-fluid rounded" alt="Container Image">
+                            {% endif %}
+                            <p class="text-muted mt-2">Container Image</p>
+                        </div>
+
+                        <!-- Debug info for development -->
+                        <div class="small text-muted">
+                            <p>Image path: {{ image_path }}</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <form method="POST" action="{{ url_for('calibrate_container') }}">
+                            <input type="hidden" name="image_path" value="{{ image_path }}">
+
+                            <div class="mb-3">
+                                <label for="name" class="form-label">Container Name</label>
+                                <input type="text" class="form-control" id="name" name="name" value="{{ suggested_name }}" required>
+                                <div class="form-text">Give your container a descriptive name</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="volume" class="form-label">Volume (ml)</label>
+                                <input type="number" class="form-control" id="volume" name="volume" min="1" value="{{ suggested_volume|default(350) }}" required>
+                                <div class="form-text">How many milliliters does this container hold?</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="drink_type_id" class="form-label">Default Drink Type</label>
+                                <select class="form-select" id="drink_type_id" name="drink_type_id">
+                                    {% for drink_type in drink_types %}
+                                    <option value="{{ drink_type.id }}"
+                                        {% if detected_drink_id and drink_type.id == detected_drink_id %}selected
+                                        {% elif 'pepsi' in image_path|lower and drink_type.name == 'Pepsi' %}selected
+                                        {% elif 'tea' in image_path|lower and drink_type.name == 'Tea' %}selected
+                                        {% elif 'juice' in image_path|lower and drink_type.name == 'Juice' %}selected
+                                        {% elif 'coffee' in image_path|lower and drink_type.name == 'Coffee' %}selected
+                                        {% elif drink_type.name == 'Water' and not detected_drink_id and 'pepsi' not in image_path|lower and 'tea' not in image_path|lower and 'juice' not in image_path|lower and 'coffee' not in image_path|lower %}selected
+                                        {% endif %}>
+                                        {{ drink_type.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">
+                                    {% if detected_drink_id %}
+                                    <span class="text-success"><i class="bi bi-check-circle"></i> We detected this drink type from your image!</span>
+                                    {% else %}
+                                    What do you usually drink from this container?
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-save"></i> Calibrate Container
+                                </button>
+                                <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">Cancel</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

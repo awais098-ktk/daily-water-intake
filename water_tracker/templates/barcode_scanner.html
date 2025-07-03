@@ -1,0 +1,391 @@
+{% extends 'base.html' %}
+
+{% block title %}Barcode Scanner - HydroMate{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="bi bi-upc-scan"></i> Barcode Scanner</h4>
+            </div>
+            <div class="card-body">
+                <p class="lead">Scan product barcodes to automatically identify drinks and log your intake!</p>
+
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> <strong>How to use:</strong>
+                    <ul class="mb-0">
+                        <li>Click "Start Scanner" to activate your camera</li>
+                        <li>Point your camera at a product barcode</li>
+                        <li>The app will automatically detect and process the barcode</li>
+                        <li>Review the detected product information and log your intake</li>
+                    </ul>
+                </div>
+
+                <!-- Scanner Container -->
+                <div id="scanner-container" class="mb-4">
+                    <div class="text-center mb-3">
+                        <button id="start-scanner" class="btn btn-primary btn-lg">
+                            <i class="bi bi-camera"></i> Start Scanner
+                        </button>
+                        <button id="stop-scanner" class="btn btn-danger btn-lg" style="display: none;">
+                            <i class="bi bi-stop-circle"></i> Stop Scanner
+                        </button>
+                    </div>
+
+                    <!-- Camera Preview -->
+                    <div id="camera-container" style="display: none;">
+                        <div class="position-relative">
+                            <video id="camera-preview" class="w-100 rounded" style="max-height: 400px;" autoplay muted></video>
+                            <div class="scanner-overlay">
+                                <div class="scanner-line"></div>
+                            </div>
+                        </div>
+                        <canvas id="barcode-canvas" style="display: none;"></canvas>
+                    </div>
+
+                    <!-- Manual Barcode Input -->
+                    <div class="mt-3">
+                        <div class="form-floating">
+                            <input type="text" class="form-control" id="manual-barcode" placeholder="Enter barcode manually">
+                            <label for="manual-barcode">Or enter barcode manually</label>
+                        </div>
+                        <div class="d-grid mt-2">
+                            <button id="process-manual-barcode" class="btn btn-outline-primary">
+                                <i class="bi bi-search"></i> Look Up Barcode
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Results Container -->
+                <div id="result-container" class="mt-4" style="display: none;">
+                    <div class="card">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0"><i class="bi bi-check-circle"></i> Product Found</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="loading-spinner" class="text-center">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p>Looking up product information...</p>
+                            </div>
+
+                            <div id="product-info" style="display: none;">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <img id="product-image" src="" alt="Product Image" class="img-fluid rounded" style="max-height: 200px;">
+                                    </div>
+                                    <div class="col-md-8">
+                                        <h5 id="product-name">Product Name</h5>
+                                        <p id="product-brand" class="text-muted">Brand</p>
+                                        
+                                        <div class="row">
+                                            <div class="col-12">
+                                                <label for="detected-volume" class="form-label">Volume (ml)</label>
+                                                <input type="number" class="form-control" id="detected-volume" value="500">
+                                                <input type="hidden" id="detected-drink-type" value="1">
+                                            </div>
+                                        </div>
+
+                                        <div class="mt-3">
+                                            <label for="barcode-notes" class="form-label">Notes (Optional)</label>
+                                            <textarea class="form-control" id="barcode-notes" rows="2" placeholder="Add any notes about this drink..."></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="d-grid gap-2 mt-3">
+                                    <button id="log-barcode-intake" class="btn btn-success btn-lg">
+                                        <i class="bi bi-plus-circle"></i> Log Intake
+                                    </button>
+                                    <button id="scan-another" class="btn btn-outline-primary">
+                                        <i class="bi bi-arrow-repeat"></i> Scan Another Product
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div id="product-not-found" style="display: none;">
+                                <div class="text-center">
+                                    <i class="bi bi-exclamation-triangle text-warning" style="font-size: 3rem;"></i>
+                                    <h5 class="mt-2">Product Not Found</h5>
+                                    <p class="text-muted">We couldn't find information for this barcode. You can still log your intake manually.</p>
+                                    
+                                    <div class="row mt-3">
+                                        <div class="col-12">
+                                            <label for="manual-volume" class="form-label">Volume (ml)</label>
+                                            <input type="number" class="form-control" id="manual-volume" value="500">
+                                            <input type="hidden" id="manual-drink-type" value="1">
+                                        </div>
+                                    </div>
+
+                                    <div class="d-grid gap-2 mt-3">
+                                        <button id="log-manual-intake" class="btn btn-success">
+                                            <i class="bi bi-plus-circle"></i> Log Intake Manually
+                                        </button>
+                                        <button id="try-again" class="btn btn-outline-primary">
+                                            <i class="bi bi-arrow-repeat"></i> Try Another Barcode
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.scanner-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+}
+
+.scanner-line {
+    position: absolute;
+    top: 50%;
+    left: 10%;
+    right: 10%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #ff0000, transparent);
+    animation: scanner-sweep 2s ease-in-out infinite;
+}
+
+@keyframes scanner-sweep {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+}
+
+#camera-preview {
+    border: 3px solid #007bff;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // DOM elements
+        const startScannerBtn = document.getElementById('start-scanner');
+        const stopScannerBtn = document.getElementById('stop-scanner');
+        const cameraContainer = document.getElementById('camera-container');
+        const cameraPreview = document.getElementById('camera-preview');
+        const barcodeCanvas = document.getElementById('barcode-canvas');
+        const manualBarcodeInput = document.getElementById('manual-barcode');
+        const processManualBarcodeBtn = document.getElementById('process-manual-barcode');
+        const resultContainer = document.getElementById('result-container');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const productInfo = document.getElementById('product-info');
+        const productNotFound = document.getElementById('product-not-found');
+
+        // Barcode scanner variables
+        let codeReader = null;
+        let stream = null;
+
+        // Initialize barcode scanner
+        function initializeScanner() {
+            codeReader = new ZXing.BrowserMultiFormatReader();
+        }
+
+        // Start camera and scanning
+        startScannerBtn.addEventListener('click', async function() {
+            try {
+                if (!codeReader) {
+                    initializeScanner();
+                }
+
+                // Get camera stream
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        facingMode: 'environment' // Use back camera if available
+                    } 
+                });
+                
+                cameraPreview.srcObject = stream;
+                cameraContainer.style.display = 'block';
+                startScannerBtn.style.display = 'none';
+                stopScannerBtn.style.display = 'inline-block';
+
+                // Start scanning
+                codeReader.decodeFromVideoDevice(null, cameraPreview, (result, err) => {
+                    if (result) {
+                        console.log('Barcode detected:', result.text);
+                        processBarcode(result.text);
+                        stopScanner();
+                    }
+                    if (err && !(err instanceof ZXing.NotFoundException)) {
+                        console.error('Scanner error:', err);
+                    }
+                });
+
+            } catch (error) {
+                console.error('Error starting scanner:', error);
+                alert('Could not access camera. Please check permissions or try manual input.');
+            }
+        });
+
+        // Stop scanner
+        function stopScanner() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            if (codeReader) {
+                codeReader.reset();
+            }
+            cameraContainer.style.display = 'none';
+            startScannerBtn.style.display = 'inline-block';
+            stopScannerBtn.style.display = 'none';
+        }
+
+        stopScannerBtn.addEventListener('click', stopScanner);
+
+        // Process manual barcode
+        processManualBarcodeBtn.addEventListener('click', function() {
+            const barcode = manualBarcodeInput.value.trim();
+            if (barcode) {
+                processBarcode(barcode);
+            } else {
+                alert('Please enter a barcode number');
+            }
+        });
+
+        // Process barcode (either scanned or manual)
+        function processBarcode(barcode) {
+            console.log('Processing barcode:', barcode);
+            
+            // Show loading
+            resultContainer.style.display = 'block';
+            loadingSpinner.style.display = 'block';
+            productInfo.style.display = 'none';
+            productNotFound.style.display = 'none';
+
+            // Send to backend API
+            fetch('/api/lookup_barcode', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ barcode: barcode })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Barcode lookup response:', data);
+                loadingSpinner.style.display = 'none';
+
+                if (data.success && data.product) {
+                    // Product found
+                    displayProductInfo(data.product);
+                } else {
+                    // Product not found
+                    displayProductNotFound(barcode);
+                }
+            })
+            .catch(error => {
+                console.error('Barcode lookup error:', error);
+                loadingSpinner.style.display = 'none';
+                displayProductNotFound(barcode);
+            });
+        }
+
+        // Display product information
+        function displayProductInfo(product) {
+            document.getElementById('product-name').textContent = product.name || 'Unknown Product';
+            document.getElementById('product-brand').textContent = product.brand || 'Unknown Brand';
+            document.getElementById('detected-volume').value = product.volume || 500;
+
+            // Set product image
+            const productImage = document.getElementById('product-image');
+            if (product.image_url) {
+                productImage.src = product.image_url;
+                productImage.style.display = 'block';
+            } else {
+                productImage.style.display = 'none';
+            }
+
+            // Set drink type based on product category (hidden field)
+            const drinkTypeHidden = document.getElementById('detected-drink-type');
+            if (product.drink_type_id) {
+                drinkTypeHidden.value = product.drink_type_id;
+                console.log(`Set drink type to: ${product.drink_type_id}`);
+            }
+
+            productInfo.style.display = 'block';
+        }
+
+        // Display product not found
+        function displayProductNotFound(barcode) {
+            // Store barcode for reference
+            document.getElementById('manual-barcode').value = barcode;
+            productNotFound.style.display = 'block';
+        }
+
+        // Log intake from barcode scan
+        document.getElementById('log-barcode-intake').addEventListener('click', function() {
+            const volume = document.getElementById('detected-volume').value;
+            const drinkTypeId = document.getElementById('detected-drink-type').value;
+            const notes = document.getElementById('barcode-notes').value;
+            
+            logIntake(volume, drinkTypeId, notes, 'barcode');
+        });
+
+        // Log intake manually
+        document.getElementById('log-manual-intake').addEventListener('click', function() {
+            const volume = document.getElementById('manual-volume').value;
+            const drinkTypeId = document.getElementById('manual-drink-type').value;
+            const barcode = document.getElementById('manual-barcode').value;
+
+            logIntake(volume, drinkTypeId, `Barcode: ${barcode} (Product not found)`, 'barcode');
+        });
+
+        // Log intake function
+        function logIntake(volume, drinkTypeId, notes, method) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/log_water';
+            form.style.display = 'none';
+
+            // Add form fields
+            const fields = {
+                'amount': volume,
+                'drink_type_id': drinkTypeId,
+                'notes': notes,
+                'method': method
+            };
+
+            Object.keys(fields).forEach(key => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = key;
+                input.value = fields[key];
+                form.appendChild(input);
+            });
+
+            document.body.appendChild(form);
+            form.submit();
+        }
+
+        // Scan another product
+        document.getElementById('scan-another').addEventListener('click', function() {
+            resultContainer.style.display = 'none';
+            manualBarcodeInput.value = '';
+        });
+
+        document.getElementById('try-again').addEventListener('click', function() {
+            resultContainer.style.display = 'none';
+            manualBarcodeInput.value = '';
+        });
+
+        // Initialize scanner library
+        initializeScanner();
+    });
+</script>
+{% endblock %}

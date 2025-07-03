@@ -1,0 +1,383 @@
+{% extends "base.html" %}
+
+{% block title %}Connect Wearable Device - Water Intake Tracker{% endblock %}
+
+{% block extra_css %}
+<style>
+    .platform-card {
+        border: 2px solid #e9ecef;
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 20px;
+        text-align: center;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        height: 100%;
+    }
+    
+    .platform-card:hover {
+        border-color: #007bff;
+        box-shadow: 0 4px 15px rgba(0,123,255,0.2);
+        transform: translateY(-2px);
+    }
+    
+    .platform-card.available {
+        border-color: #28a745;
+    }
+    
+    .platform-card.coming-soon {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+    
+    .platform-icon {
+        font-size: 4rem;
+        margin-bottom: 20px;
+        color: #6c757d;
+    }
+    
+    .platform-card.available .platform-icon {
+        color: #28a745;
+    }
+    
+    .platform-card.google-fit .platform-icon {
+        color: #4285f4;
+    }
+    
+    .platform-card.fitbit .platform-icon {
+        color: #00b0b9;
+    }
+    
+    .platform-card.apple-health .platform-icon {
+        color: #ff3b30;
+    }
+    
+    .feature-list {
+        text-align: left;
+        margin-top: 15px;
+    }
+    
+    .feature-list li {
+        margin-bottom: 5px;
+        font-size: 0.9rem;
+    }
+    
+    .status-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        font-size: 0.8rem;
+    }
+    
+    .info-section {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 10px;
+        padding: 25px;
+        margin-bottom: 30px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">
+                <i class="bi bi-smartwatch"></i> Connect Wearable Device
+            </h2>
+        </div>
+    </div>
+
+    <!-- Information Section -->
+    <div class="info-section">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h4><i class="bi bi-info-circle"></i> Why Connect a Wearable?</h4>
+                <p class="mb-2">Connecting your fitness tracker or smartwatch allows us to provide personalized hydration recommendations based on your activity level, helping you stay optimally hydrated throughout the day.</p>
+                <ul class="list-unstyled">
+                    <li><i class="bi bi-check-circle"></i> Activity-based hydration recommendations</li>
+                    <li><i class="bi bi-check-circle"></i> Exercise-specific hydration tips</li>
+                    <li><i class="bi bi-check-circle"></i> Automatic goal adjustments</li>
+                    <li><i class="bi bi-check-circle"></i> Comprehensive health insights</li>
+                </ul>
+            </div>
+            <div class="col-md-4 text-center">
+                <i class="bi bi-heart-pulse" style="font-size: 5rem; opacity: 0.8;"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Platform Selection -->
+    <div class="row">
+        <div class="col-12">
+            <h4 class="mb-4">Choose Your Platform</h4>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Google Fit -->
+        <div class="col-md-4">
+            {% if oauth_configured %}
+            <div class="platform-card google-fit available position-relative" onclick="connectPlatform('google_fit')">
+                <span class="badge bg-success status-badge">Available</span>
+            {% else %}
+            <div class="platform-card google-fit coming-soon position-relative" onclick="connectPlatform('google_fit')">
+                <span class="badge bg-warning status-badge">Setup Required</span>
+            {% endif %}
+                <div class="platform-icon">
+                    <i class="bi bi-google"></i>
+                </div>
+                <h5>Google Fit</h5>
+                <p class="text-muted">Connect your Google Fit account to sync activity data from Android devices and compatible fitness trackers.</p>
+                <ul class="feature-list">
+                    <li><i class="bi bi-check text-success"></i> Steps and distance tracking</li>
+                    <li><i class="bi bi-check text-success"></i> Heart rate monitoring</li>
+                    <li><i class="bi bi-check text-success"></i> Exercise session detection</li>
+                    <li><i class="bi bi-check text-success"></i> Calories burned calculation</li>
+                </ul>
+                <div class="mt-3">
+                    {% if oauth_configured %}
+                    <button class="btn btn-primary" onclick="connectPlatform('google_fit')">
+                        <i class="bi bi-google"></i> Connect Google Fit
+                    </button>
+                    {% else %}
+                    <button class="btn btn-outline-secondary" disabled>
+                        <i class="bi bi-google"></i> Setup Required
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Fitbit -->
+        <div class="col-md-4">
+            {% if oauth_configured %}
+            <div class="platform-card fitbit available position-relative" onclick="connectPlatform('fitbit')">
+                <span class="badge bg-success status-badge">Available</span>
+            {% else %}
+            <div class="platform-card fitbit coming-soon position-relative" onclick="connectPlatform('fitbit')">
+                <span class="badge bg-warning status-badge">Setup Required</span>
+            {% endif %}
+                <div class="platform-icon">
+                    <i class="bi bi-smartwatch"></i>
+                </div>
+                <h5>Fitbit</h5>
+                <p class="text-muted">Sync data from your Fitbit device including detailed activity metrics and sleep patterns.</p>
+                <ul class="feature-list">
+                    <li><i class="bi bi-check text-success"></i> Comprehensive activity tracking</li>
+                    <li><i class="bi bi-check text-success"></i> Heart rate zones</li>
+                    <li><i class="bi bi-check text-success"></i> Sleep quality data</li>
+                    <li><i class="bi bi-check text-success"></i> Active minutes tracking</li>
+                </ul>
+                <div class="mt-3">
+                    {% if oauth_configured %}
+                    <button class="btn btn-info">
+                        <i class="bi bi-smartwatch"></i> Connect Fitbit
+                    </button>
+                    {% else %}
+                    <button class="btn btn-outline-secondary" disabled>
+                        <i class="bi bi-smartwatch"></i> Setup Required
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Mock/Demo -->
+        <div class="col-md-4">
+            <div class="platform-card available position-relative" onclick="connectPlatform('mock')">
+                <span class="badge bg-success status-badge">Available</span>
+                <div class="platform-icon">
+                    <i class="bi bi-cpu"></i>
+                </div>
+                <h5>Demo Device</h5>
+                <p class="text-muted">Connect a mock fitness tracker for testing and demonstration purposes. Generates realistic sample data.</p>
+                <ul class="feature-list">
+                    <li><i class="bi bi-check text-success"></i> Simulated activity data</li>
+                    <li><i class="bi bi-check text-success"></i> Realistic metrics</li>
+                    <li><i class="bi bi-check text-success"></i> Perfect for testing</li>
+                    <li><i class="bi bi-check text-success"></i> No setup required</li>
+                </ul>
+                <div class="mt-3">
+                    <button class="btn btn-primary">
+                        <i class="bi bi-cpu"></i> Connect Demo Device
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Coming Soon Platforms -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <h5 class="mb-3 text-muted">Coming Soon</h5>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Apple Health -->
+        <div class="col-md-4">
+            <div class="platform-card apple-health coming-soon position-relative">
+                <span class="badge bg-secondary status-badge">Future</span>
+                <div class="platform-icon">
+                    <i class="bi bi-heart"></i>
+                </div>
+                <h5>Apple Health</h5>
+                <p class="text-muted">Integration with Apple HealthKit for iPhone and Apple Watch users.</p>
+                <div class="mt-3">
+                    <button class="btn btn-outline-secondary" disabled>
+                        <i class="bi bi-heart"></i> Apple Health
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Samsung Health -->
+        <div class="col-md-4">
+            <div class="platform-card coming-soon position-relative">
+                <span class="badge bg-secondary status-badge">Future</span>
+                <div class="platform-icon">
+                    <i class="bi bi-phone"></i>
+                </div>
+                <h5>Samsung Health</h5>
+                <p class="text-muted">Connect with Samsung Health for Galaxy device users.</p>
+                <div class="mt-3">
+                    <button class="btn btn-outline-secondary" disabled>
+                        <i class="bi bi-phone"></i> Samsung Health
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Garmin -->
+        <div class="col-md-4">
+            <div class="platform-card coming-soon position-relative">
+                <span class="badge bg-secondary status-badge">Future</span>
+                <div class="platform-icon">
+                    <i class="bi bi-geo-alt"></i>
+                </div>
+                <h5>Garmin Connect</h5>
+                <p class="text-muted">Integration with Garmin devices for serious athletes and fitness enthusiasts.</p>
+                <div class="mt-3">
+                    <button class="btn btn-outline-secondary" disabled>
+                        <i class="bi bi-geo-alt"></i> Garmin Connect
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Section -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-question-circle"></i> Need Help?</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h6>Privacy & Security</h6>
+                            <p class="small text-muted">We only access the activity data necessary for hydration recommendations. Your data is encrypted and never shared with third parties.</p>
+                        </div>
+                        <div class="col-md-4">
+                            <h6>Troubleshooting</h6>
+                            <p class="small text-muted">Having trouble connecting? Make sure you've granted the necessary permissions in your fitness app and that your device is connected to the internet.</p>
+                        </div>
+                        {% if not oauth_configured %}
+                        <div class="col-md-4">
+                            <h6>Setup Required</h6>
+                            <p class="small text-muted">To enable Google Fit and Fitbit integration, OAuth API credentials need to be configured. Contact your administrator or check the setup documentation.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="mt-3">
+                        <a href="{{ url_for('wearable.index') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Back to Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Prevent multiple clicks
+let isConnecting = false;
+
+function connectPlatform(platform) {
+    if (isConnecting) {
+        return;
+    }
+    if (platform === 'mock') {
+        // Show confirmation for demo device
+        if (confirm('Connect a demo fitness tracker? This will generate sample activity data for testing purposes.')) {
+            window.location.href = `/wearable/connect/${platform}`;
+        }
+    } else if (platform === 'google_fit' || platform === 'fitbit') {
+        // Simplified logic - just try to connect for Google Fit since we know it's configured
+        if (platform === 'google_fit') {
+            const platformName = 'Google Fit';
+
+            if (confirm(`Connect to ${platformName}? You will be redirected to ${platformName} to authorize access to your activity data.`)) {
+                isConnecting = true;
+                window.location.href = `/wearable/connect/${platform}`;
+            }
+        } else {
+            // For other platforms, check configuration
+            const oauthConfig = {{ oauth_configured | tojson | safe }};
+            console.log('Platform:', platform, 'OAuth Config:', oauthConfig);
+            const isConfigured = oauthConfig && oauthConfig[platform];
+
+            if (isConfigured) {
+                const platformName = platform.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                if (confirm(`Connect to ${platformName}? You will be redirected to ${platformName} to authorize access to your activity data.`)) {
+                    showAlert(`Redirecting to ${platformName} for authorization...`, 'info');
+                    setTimeout(() => {
+                        window.location.href = `/wearable/connect/${platform}`;
+                    }, 1000);
+                }
+            } else {
+                const platformName = platform.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                showAlert(`${platformName} integration requires API credentials to be configured. Please contact the administrator to set up OAuth credentials.`, 'warning');
+            }
+        }
+    } else {
+        // Show coming soon message for other platforms
+        showAlert(`${platform.replace('_', ' ').toUpperCase()} integration is coming soon! For now, you can try the demo device to see how wearable integration works.`, 'info');
+    }
+}
+
+function showAlert(message, type) {
+    try {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+
+        const container = document.querySelector('.container');
+        const row = document.querySelector('.row');
+
+        if (container && row) {
+            container.insertBefore(alertDiv, row);
+        } else {
+            document.body.appendChild(alertDiv);
+        }
+
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 5000);
+    } catch (error) {
+        alert(message);
+    }
+}
+</script>
+{% endblock %}

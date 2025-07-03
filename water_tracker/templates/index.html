@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 text-center">
+        <h1 class="display-4 mb-4">Welcome to HydroMate</h1>
+        <p class="lead">Track your daily water intake and stay hydrated!</p>
+
+        <div class="mt-5">
+            <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="HydroMate Logo" class="img-fluid mb-4" style="max-width: 150px;">
+
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h5 class="card-title">Track Your Hydration</h5>
+                            <p class="card-text">Log your water intake throughout the day and monitor your progress.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h5 class="card-title">View Your Progress</h5>
+                            <p class="card-text">See your hydration history with beautiful charts and statistics.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg me-2">Register</a>
+                <a href="{{ url_for('login') }}" class="btn btn-outline-primary btn-lg">Login</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

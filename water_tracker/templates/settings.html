@@ -1,0 +1,185 @@
+{% extends 'base.html' %}
+
+{% block title %}Settings - HydroMate{% endblock %}
+
+{% block extra_css %}
+<style>
+    .avatar-circle {
+        width: 100px;
+        height: 100px;
+        background-color: var(--accent-color);
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .avatar-text {
+        font-size: 48px;
+        color: white;
+        font-weight: bold;
+    }
+
+    .profile-image-container {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        overflow: hidden;
+        border: 3px solid var(--accent-color);
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .profile-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">Settings</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('settings') }}" enctype="multipart/form-data">
+                    <!-- Profile Picture Section -->
+                    <div class="mb-4">
+                        <h5 class="mb-3">Profile Picture</h5>
+                        <div class="row align-items-center">
+                            <div class="col-md-4 text-center">
+                                <div class="profile-image-container mx-auto mb-3">
+                                    {% if current_user.avatar_path %}
+                                        <img src="{{ url_for('static', filename=current_user.avatar_path) }}" alt="{{ current_user.username }}" class="profile-image" id="current-profile-image">
+                                    {% else %}
+                                        <div class="avatar-circle mx-auto">
+                                            <span class="avatar-text">{{ current_user.username[0]|upper }}</span>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-8">
+                                <div class="mb-3">
+                                    <label for="avatar" class="form-label">Upload New Profile Picture</label>
+                                    <div class="input-group">
+                                        <input type="file" class="form-control" id="avatar" name="avatar" accept="image/*" onchange="previewImage(this)">
+                                        <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('avatar').click()">
+                                            <i class="bi bi-upload"></i> Browse
+                                        </button>
+                                    </div>
+                                    <div class="form-text">Select an image from your device to use as your profile picture</div>
+                                </div>
+                                <div id="image-preview-container" class="mt-2 text-center" style="display: none;">
+                                    <img id="image-preview" src="#" alt="Preview" class="img-thumbnail" style="max-height: 150px;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="row">
+                        <!-- Hydration Settings -->
+                        <div class="col-md-6">
+                            <h5 class="mb-3">Hydration Settings</h5>
+
+                            <div class="mb-3">
+                                <label for="daily_goal" class="form-label">Daily Water Goal</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="daily_goal" name="daily_goal"
+                                           value="{{ current_user.daily_goal }}" min="1" required>
+                                    <span class="input-group-text">{{ current_user.preferred_unit }}</span>
+                                </div>
+                                <div class="form-text">Recommended daily water intake is around 2000-3000 ml.</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="preferred_unit" class="form-label">Preferred Unit</label>
+                                <select class="form-select" id="preferred_unit" name="preferred_unit">
+                                    <option value="ml" {% if current_user.preferred_unit == 'ml' %}selected{% endif %}>Milliliters (ml)</option>
+                                    <option value="oz" {% if current_user.preferred_unit == 'oz' %}selected{% endif %}>Fluid Ounces (oz)</option>
+                                    <option value="cups" {% if current_user.preferred_unit == 'cups' %}selected{% endif %}>Cups</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Appearance Settings -->
+                        <div class="col-md-6">
+                            <h5 class="mb-3">Appearance Settings</h5>
+
+                            <div class="mb-3">
+                                <label for="theme" class="form-label">Theme</label>
+                                <select class="form-select" id="theme" name="theme">
+                                    <option value="light" {% if current_user.theme == 'light' %}selected{% endif %}>Light</option>
+                                    <option value="dark" {% if current_user.theme == 'dark' %}selected{% endif %}>Dark</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="accent_color" class="form-label">Accent Color</label>
+                                <select class="form-select" id="accent_color" name="accent_color">
+                                    <option value="blue" {% if current_user.accent_color == 'blue' %}selected{% endif %}>Blue</option>
+                                    <option value="green" {% if current_user.accent_color == 'green' %}selected{% endif %}>Green</option>
+                                    <option value="purple" {% if current_user.accent_color == 'purple' %}selected{% endif %}>Purple</option>
+                                    <option value="orange" {% if current_user.accent_color == 'orange' %}selected{% endif %}>Orange</option>
+                                    <option value="red" {% if current_user.accent_color == 'red' %}selected{% endif %}>Red</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- Reminder Settings -->
+                    <h5 class="mb-3">Reminder Settings</h5>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="reminder_enabled" name="reminder_enabled"
+                               {% if current_user.reminder_enabled %}checked{% endif %}>
+                        <label class="form-check-label" for="reminder_enabled">Enable Browser Reminders</label>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="reminder_interval" class="form-label">Reminder Interval (minutes)</label>
+                        <input type="number" class="form-control" id="reminder_interval" name="reminder_interval"
+                               value="{{ current_user.reminder_interval }}" min="15" max="240">
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Save Settings</button>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer">
+                <a href="{{ url_for('dashboard') }}" class="btn btn-outline-primary">
+                    <i class="bi bi-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function previewImage(input) {
+        const previewContainer = document.getElementById('image-preview-container');
+        const preview = document.getElementById('image-preview');
+
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+                previewContainer.style.display = 'block';
+            }
+
+            reader.readAsDataURL(input.files[0]);
+        } else {
+            previewContainer.style.display = 'none';
+        }
+    }
+</script>
+{% endblock %}

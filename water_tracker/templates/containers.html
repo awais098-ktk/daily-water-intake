@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+
+{% block title %}My Containers - HydroMate{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2>My Containers</h2>
+        </div>
+        <p class="lead">Manage your containers for quick water logging.</p>
+    </div>
+</div>
+
+{% if containers %}
+<div class="row">
+    {% for container in containers %}
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            {% if container.image_path %}
+                {% if 'pepsi' in container.name|lower %}
+                    <!-- Special handling for Pepsi cans -->
+                    <img src="{{ url_for('static', filename='uploads/containers/pepsi_can.png') }}" class="card-img-top container-img" alt="{{ container.name }}"
+                         onerror="this.onerror=null; this.parentNode.innerHTML='<div class=\'card-img-top container-placeholder d-flex align-items-center justify-content-center\'><i class=\'bi bi-cup-fill display-1\'></i></div>';">
+                {% else %}
+                    <img src="{{ url_for('static', filename=container.image_path) }}" class="card-img-top container-img" alt="{{ container.name }}"
+                         onerror="this.onerror=null; this.parentNode.innerHTML='<div class=\'card-img-top container-placeholder d-flex align-items-center justify-content-center\'><i class=\'bi bi-cup-fill display-1\'></i></div>';">
+                {% endif %}
+            {% else %}
+            <div class="card-img-top container-placeholder d-flex align-items-center justify-content-center">
+                <i class="bi bi-cup-fill display-1"></i>
+            </div>
+            {% endif %}
+            <div class="card-body">
+                <h5 class="card-title">{{ container.name }}</h5>
+                <p class="card-text">Volume: {{ container.volume }} ml</p>
+
+                {% if container.drink_type_id %}
+                    {% for drink_type in drink_types %}
+                        {% if drink_type.id == container.drink_type_id %}
+                            <p class="card-text">Drink Type: <span class="badge bg-primary">{{ drink_type.name }}</span></p>
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+
+                <form method="POST" action="{{ url_for('log_water_with_container', container_id=container.id) }}" class="mb-2">
+                    <div class="mb-3">
+                        <label for="drink_type_{{ container.id }}" class="form-label">Drink Type:</label>
+                        <select class="form-select" id="drink_type_{{ container.id }}" name="drink_type_id">
+                            {% for drink_type in drink_types %}
+                            <option value="{{ drink_type.id }}" {% if drink_type.id == container.drink_type_id %}selected{% endif %}>
+                                {{ drink_type.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-plus-circle"></i> Log {{ container.volume }} ml
+                        </button>
+                    </div>
+                </form>
+
+                <div class="d-flex justify-content-between mt-3">
+                    <a href="{{ url_for('edit_container', container_id=container.id) }}" class="btn btn-outline-primary">
+                        <i class="bi bi-pencil"></i> Edit
+                    </a>
+                    <button type="button" class="btn btn-outline-danger" onclick="deleteContainer({{ container.id }}); return false;">
+                        <i class="bi bi-trash"></i> Delete
+                    </button>
+                </div>
+            </div>
+            <div class="card-footer text-muted">
+                Added on {{ container.created_at.strftime('%Y-%m-%d') }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Modal -->
+    <div class="modal fade" id="deleteModal{{ container.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ container.id }}" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteModalLabel{{ container.id }}">Confirm Delete</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to delete the container "{{ container.name }}"?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <form method="POST" action="{{ url_for('delete_container', container_id=container.id) }}" class="delete-container-form">
+                        <input type="hidden" name="container_id" value="{{ container.id }}">
+                        <button type="submit" class="btn btn-danger delete-submit-btn">Delete</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="alert alert-info">
+    <p>You don't have any containers yet. Add your first container to get started!</p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .container-img {
+        height: 200px;
+        object-fit: contain;
+        background-color: #f8f9fa;
+        padding: 10px;
+    }
+
+    .container-placeholder {
+        height: 200px;
+        background-color: #f8f9fa;
+        color: #6c757d;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Direct delete function without using modal
+    function deleteContainer(containerId) {
+        if (confirm('Are you sure you want to delete this container?')) {
+            console.log('Deleting container ID:', containerId);
+
+            // Create a form and submit it directly
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/containers/' + containerId + '/delete';
+            document.body.appendChild(form);
+
+            // Add CSRF token if needed
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            if (csrfToken) {
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = 'csrf_token';
+                csrfInput.value = csrfToken;
+                form.appendChild(csrfInput);
+            }
+
+            // Submit the form
+            form.submit();
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Fix for delete buttons in modals (as backup)
+        const deleteButtons = document.querySelectorAll('.delete-container-btn');
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                const modalId = this.getAttribute('data-bs-target');
+                const modal = document.querySelector(modalId);
+                if (modal) {
+                    const deleteForm = modal.querySelector('form');
+                    if (deleteForm) {
+                        console.log('Delete form found:', deleteForm);
+
+                        // Add a direct submit button click handler
+                        const submitButton = deleteForm.querySelector('button[type="submit"]');
+                        if (submitButton) {
+                            submitButton.addEventListener('click', function(e) {
+                                e.preventDefault();
+                                console.log('Delete button clicked, submitting form directly');
+                                deleteForm.submit();
+                            });
+                        }
+                    }
+                }
+            });
+        });
+
+        // Add direct form submission for all delete forms
+        document.querySelectorAll('.modal form').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                console.log('Delete form submitted directly');
+
+                // Get the container ID from the form action
+                const action = form.getAttribute('action');
+                const containerId = action.split('/').slice(-2)[0];
+
+                // Use the direct delete function
+                deleteContainer(containerId);
+            });
+        });
+    });
+</script>
+{% endblock %}

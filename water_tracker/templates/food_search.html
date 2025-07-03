@@ -1,0 +1,435 @@
+{% extends 'base.html' %}
+
+{% block title %}Food Search - HydroMate{% endblock %}
+
+{% block extra_css %}
+<style>
+    .search-card {
+        border-left: 4px solid var(--accent-color);
+        margin-bottom: 20px;
+    }
+    
+    .food-item-card {
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+    
+    .food-item-card:hover {
+        border-color: var(--accent-color);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+    }
+    
+    .food-item-card.selected {
+        border-color: var(--accent-color);
+        background-color: rgba(77, 166, 255, 0.1);
+    }
+    
+    .nutrition-badge {
+        background-color: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 12px;
+        padding: 4px 8px;
+        font-size: 0.8rem;
+        margin: 2px;
+        display: inline-block;
+    }
+    
+    .category-filter {
+        margin-bottom: 20px;
+    }
+    
+    .category-btn {
+        margin: 5px;
+        border-radius: 20px;
+    }
+    
+    .search-input {
+        border: 2px solid #e9ecef;
+        border-radius: 25px;
+        padding: 12px 20px;
+        font-size: 1.1rem;
+    }
+    
+    .search-input:focus {
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 0.2rem rgba(77, 166, 255, 0.25);
+    }
+    
+    .quick-add-form {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        margin-top: 20px;
+        display: none;
+    }
+    
+    .nutrition-info {
+        background-color: #e7f3ff;
+        border-radius: 8px;
+        padding: 15px;
+        margin-top: 15px;
+    }
+    
+    .macro-circle {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        color: white;
+        margin: 0 auto 5px;
+        font-size: 0.9rem;
+    }
+    
+    .carbs-circle { background-color: #FF6B6B; }
+    .fats-circle { background-color: #4ECDC4; }
+    .proteins-circle { background-color: #45B7D1; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2><i class="bi bi-search text-primary"></i> Food Search</h2>
+            <p class="text-muted">Search for foods and add them to your meal log</p>
+        </div>
+    </div>
+
+    <!-- Search Form -->
+    <div class="card search-card">
+        <div class="card-body">
+            <form method="GET" class="mb-3">
+                <div class="row">
+                    <div class="col-md-8">
+                        <input type="text" class="form-control search-input" name="q" 
+                               value="{{ query }}" placeholder="Search for foods (e.g., apple, chicken breast, brown rice)">
+                    </div>
+                    <div class="col-md-4">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-search"></i> Search
+                        </button>
+                    </div>
+                </div>
+            </form>
+            
+            <!-- Category Filters -->
+            <div class="category-filter">
+                <h6>Filter by Category:</h6>
+                <a href="{{ url_for('food_search', q=query) }}" 
+                   class="btn btn-outline-secondary category-btn {{ 'active' if not selected_category else '' }}">
+                    All Categories
+                </a>
+                {% for category in categories %}
+                <a href="{{ url_for('food_search', q=query, category=category.id) }}" 
+                   class="btn btn-outline-secondary category-btn {{ 'active' if selected_category == category.id else '' }}"
+                   style="border-color: {{ category.color }}; {{ 'background-color: ' + category.color + '; color: white;' if selected_category == category.id else '' }}">
+                    <i class="bi {{ category.icon }}"></i> {{ category.name }}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Left Column - Search Results -->
+        <div class="col-lg-8">
+            {% if query %}
+            <h5>Search Results for "{{ query }}"</h5>
+            {% endif %}
+            
+            {% if foods %}
+                {% for food in foods %}
+                <div class="food-item-card" data-food-id="{{ food.id }}" onclick="selectFood({{ food.id }})">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h6 class="mb-1">{{ food.name }}</h6>
+                            {% if food.brand %}
+                            <small class="text-muted">{{ food.brand }}</small>
+                            {% endif %}
+                            {% if food.category %}
+                            <span class="badge" style="background-color: {{ food.category.color }}; color: white;">
+                                <i class="bi {{ food.category.icon }}"></i> {{ food.category.name }}
+                            </span>
+                            {% endif %}
+                            
+                            <div class="mt-2">
+                                <span class="nutrition-badge">
+                                    <strong>{{ "%.0f"|format(food.calories_per_100g) }}</strong> cal/100g
+                                </span>
+                                <span class="nutrition-badge">
+                                    C: {{ "%.1f"|format(food.carbs_per_100g) }}g
+                                </span>
+                                <span class="nutrition-badge">
+                                    F: {{ "%.1f"|format(food.fats_per_100g) }}g
+                                </span>
+                                <span class="nutrition-badge">
+                                    P: {{ "%.1f"|format(food.proteins_per_100g) }}g
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="row text-center">
+                                <div class="col-4">
+                                    <div class="macro-circle carbs-circle">
+                                        {{ "%.0f"|format(food.carbs_per_100g) }}
+                                    </div>
+                                    <small>Carbs</small>
+                                </div>
+                                <div class="col-4">
+                                    <div class="macro-circle fats-circle">
+                                        {{ "%.0f"|format(food.fats_per_100g) }}
+                                    </div>
+                                    <small>Fats</small>
+                                </div>
+                                <div class="col-4">
+                                    <div class="macro-circle proteins-circle">
+                                        {{ "%.0f"|format(food.proteins_per_100g) }}
+                                    </div>
+                                    <small>Proteins</small>
+                                </div>
+                            </div>
+                            <small class="text-muted">per 100g</small>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                {% if query %}
+                <div class="text-center py-5">
+                    <i class="bi bi-search fs-1 text-muted"></i>
+                    <h5 class="mt-3">No foods found</h5>
+                    <p class="text-muted">Try searching with different keywords or browse by category</p>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-search fs-1 text-muted"></i>
+                    <h5 class="mt-3">Search for Foods</h5>
+                    <p class="text-muted">Enter a food name in the search box above to get started</p>
+                </div>
+                {% endif %}
+            {% endif %}
+        </div>
+
+        <!-- Right Column - Quick Add Form -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-plus-circle"></i> Quick Add Food</h5>
+                </div>
+                <div class="card-body">
+                    <div id="selected-food-info" style="display: none;">
+                        <div class="nutrition-info">
+                            <h6 id="selected-food-name">Select a food</h6>
+                            <div id="selected-food-nutrition"></div>
+                        </div>
+                    </div>
+                    
+                    <form method="POST" action="{{ url_for('log_meal') }}" id="quick-add-form">
+                        <input type="hidden" id="food_item_id" name="food_item_id">
+                        <input type="hidden" id="food_name" name="food_name">
+                        
+                        <div class="mb-3">
+                            <label for="quantity_g" class="form-label">Quantity (grams)</label>
+                            <input type="number" class="form-control" id="quantity_g" name="quantity_g" 
+                                   step="0.1" value="100" required onchange="updateNutrition()">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="meal_type" class="form-label">Meal Type</label>
+                            <select class="form-select" id="meal_type" name="meal_type">
+                                <option value="breakfast">Breakfast</option>
+                                <option value="lunch">Lunch</option>
+                                <option value="dinner">Dinner</option>
+                                <option value="snack">Snack</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Notes (optional)</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="2"></textarea>
+                        </div>
+                        
+                        <div id="calculated-nutrition" class="nutrition-info mb-3" style="display: none;">
+                            <h6>Nutrition for this serving:</h6>
+                            <div class="row text-center">
+                                <div class="col-3">
+                                    <div class="text-primary">
+                                        <strong id="calc-calories">0</strong>
+                                        <small class="d-block">Calories</small>
+                                    </div>
+                                </div>
+                                <div class="col-3">
+                                    <div class="text-danger">
+                                        <strong id="calc-carbs">0</strong>g
+                                        <small class="d-block">Carbs</small>
+                                    </div>
+                                </div>
+                                <div class="col-3">
+                                    <div class="text-info">
+                                        <strong id="calc-fats">0</strong>g
+                                        <small class="d-block">Fats</small>
+                                    </div>
+                                </div>
+                                <div class="col-3">
+                                    <div class="text-success">
+                                        <strong id="calc-proteins">0</strong>g
+                                        <small class="d-block">Proteins</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-success w-100" id="add-food-btn" disabled>
+                            <i class="bi bi-plus-circle"></i> Add to Meal Log
+                        </button>
+                    </form>
+                    
+                    <div class="text-center mt-3">
+                        <small class="text-muted">Select a food from the search results to add it to your meal log</small>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="card mt-3">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0"><i class="bi bi-lightning-fill"></i> Quick Actions</h6>
+                </div>
+                <div class="card-body p-2">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('eating_dashboard') }}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-arrow-left"></i> Back to Dashboard
+                        </a>
+                        <a href="{{ url_for('barcode_scanner') }}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-upc-scan"></i> Scan Barcode
+                        </a>
+                        <a href="{{ url_for('meal_containers') }}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-box"></i> Meal Containers
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let selectedFoodData = null;
+    
+    // Auto-set meal type based on current time
+    document.addEventListener('DOMContentLoaded', function() {
+        const now = new Date();
+        const hour = now.getHours();
+        const mealTypeSelect = document.getElementById('meal_type');
+        
+        if (hour >= 5 && hour < 11) {
+            mealTypeSelect.value = 'breakfast';
+        } else if (hour >= 11 && hour < 16) {
+            mealTypeSelect.value = 'lunch';
+        } else if (hour >= 16 && hour < 22) {
+            mealTypeSelect.value = 'dinner';
+        } else {
+            mealTypeSelect.value = 'snack';
+        }
+    });
+    
+    function selectFood(foodId) {
+        // Remove selection from all cards
+        document.querySelectorAll('.food-item-card').forEach(card => {
+            card.classList.remove('selected');
+        });
+        
+        // Add selection to clicked card
+        const selectedCard = document.querySelector(`[data-food-id="${foodId}"]`);
+        selectedCard.classList.add('selected');
+        
+        // Extract food data directly from the card (more reliable)
+        const card = selectedCard;
+        const name = card.querySelector('h6').textContent.trim();
+
+        // Extract nutrition data from data attributes or text content
+        const caloriesText = card.querySelector('.nutrition-badge strong').textContent;
+        const calories = parseFloat(caloriesText);
+
+        // Try to get more nutrition data from the card
+        const nutritionBadges = card.querySelectorAll('.nutrition-badge');
+        let carbs = 0, fats = 0, proteins = 0;
+
+        nutritionBadges.forEach(badge => {
+            const text = badge.textContent.toLowerCase();
+            if (text.includes('carbs')) {
+                const match = text.match(/(\d+\.?\d*)/);
+                if (match) carbs = parseFloat(match[1]);
+            } else if (text.includes('fats')) {
+                const match = text.match(/(\d+\.?\d*)/);
+                if (match) fats = parseFloat(match[1]);
+            } else if (text.includes('proteins')) {
+                const match = text.match(/(\d+\.?\d*)/);
+                if (match) proteins = parseFloat(match[1]);
+            }
+        });
+
+        selectedFoodData = {
+            id: foodId,
+            name: name,
+            calories_per_100g: calories,
+            carbs_per_100g: carbs,
+            fats_per_100g: fats,
+            proteins_per_100g: proteins
+        };
+
+        updateSelectedFood(selectedFoodData);
+    }
+    
+    function updateSelectedFood(food) {
+        // Update form fields
+        document.getElementById('food_item_id').value = food.id;
+        document.getElementById('food_name').value = food.name;
+        
+        // Update display
+        document.getElementById('selected-food-name').textContent = food.name;
+        document.getElementById('selected-food-nutrition').innerHTML = `
+            <small>Per 100g: ${food.calories_per_100g} cal, 
+            C: ${food.carbs_per_100g}g, F: ${food.fats_per_100g}g, P: ${food.proteins_per_100g}g</small>
+        `;
+        
+        // Show the selected food info
+        document.getElementById('selected-food-info').style.display = 'block';
+        
+        // Enable the add button
+        document.getElementById('add-food-btn').disabled = false;
+        
+        // Update nutrition calculation
+        updateNutrition();
+    }
+    
+    function updateNutrition() {
+        if (!selectedFoodData) return;
+        
+        const quantity = parseFloat(document.getElementById('quantity_g').value) || 0;
+        const factor = quantity / 100;
+        
+        const calories = Math.round(selectedFoodData.calories_per_100g * factor);
+        const carbs = (selectedFoodData.carbs_per_100g * factor).toFixed(1);
+        const fats = (selectedFoodData.fats_per_100g * factor).toFixed(1);
+        const proteins = (selectedFoodData.proteins_per_100g * factor).toFixed(1);
+        
+        document.getElementById('calc-calories').textContent = calories;
+        document.getElementById('calc-carbs').textContent = carbs;
+        document.getElementById('calc-fats').textContent = fats;
+        document.getElementById('calc-proteins').textContent = proteins;
+        
+        document.getElementById('calculated-nutrition').style.display = 'block';
+    }
+</script>
+{% endblock %}

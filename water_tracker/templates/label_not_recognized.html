@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block title %}Label Not Recognized - HydroMate{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-warning">
+                <h4 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Label Not Recognized</h4>
+            </div>
+            <div class="card-body">
+                <p class="lead">We couldn't detect the volume from this label. Please try again with a clearer image or enter the volume manually.</p>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <img src="{{ url_for('static', filename=image_path) }}" class="img-fluid rounded" alt="Label Image">
+                    </div>
+                    <div class="col-md-6">
+                        <form method="POST" action="{{ url_for('log_from_label') }}">
+                            <div class="mb-3">
+                                <label for="volume" class="form-label">Volume (ml)</label>
+                                <input type="number" class="form-control" id="volume" name="volume" min="1" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="drink_type" class="form-label">Drink Type:</label>
+                                <select class="form-select" id="drink_type" name="drink_type_id">
+                                    {% for drink_type in drink_types %}
+                                    <option value="{{ drink_type.id }}">{{ drink_type.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-plus-circle"></i> Log Water
+                                </button>
+                                <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">Cancel</a>
+                            </div>
+                        </form>
+                        
+                        {% if text %}
+                        <div class="mt-4">
+                            <h6>Extracted Text:</h6>
+                            <div class="border p-2 rounded bg-light">
+                                <pre style="white-space: pre-wrap; font-size: 0.8rem;">{{ text }}</pre>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

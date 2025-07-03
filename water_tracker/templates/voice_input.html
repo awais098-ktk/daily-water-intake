@@ -1,0 +1,208 @@
+{% extends 'base.html' %}
+
+{% block title %}Voice Input - HydroMate{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">Voice Input</h4>
+            </div>
+            <div class="card-body">
+                <p class="lead">Record your voice to log water intake!</p>
+
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> Try saying something like:
+                    <ul>
+                        <li>"I drank 200 ml of water"</li>
+                        <li>"Add 8 ounces of tea"</li>
+                        <li>"Log 1 cup of coffee"</li>
+                        <li>"I had a glass of juice"</li>
+                    </ul>
+                </div>
+
+                <div class="text-center mb-4">
+                    <div id="recording_controls">
+                        <button id="start_recording" class="btn btn-primary btn-lg">
+                            <i class="bi bi-mic"></i> Start Recording
+                        </button>
+                        <button id="stop_recording" class="btn btn-danger btn-lg" style="display: none;">
+                            <i class="bi bi-stop-circle"></i> Stop Recording
+                        </button>
+                    </div>
+
+                    <div id="recording_status" class="mt-3" style="display: none;">
+                        <div class="spinner-grow text-primary" role="status">
+                            <span class="visually-hidden">Recording...</span>
+                        </div>
+                        <p>Recording... <span id="recording_time">0:00</span></p>
+                    </div>
+
+                    <div id="audio_player" class="mt-3" style="display: none;">
+                        <audio id="recorded_audio" controls></audio>
+                    </div>
+                </div>
+
+                <form id="voice_form" method="POST" action="{{ url_for('voice_input') }}" enctype="multipart/form-data" style="display: none;">
+                    <input type="file" id="audio_data" name="audio_data" style="display: none;">
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-check-circle"></i> Process Voice Input
+                        </button>
+                        <button type="button" id="record_again" class="btn btn-outline-primary">
+                            <i class="bi bi-arrow-repeat"></i> Record Again
+                        </button>
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+
+                <div class="mt-4">
+                    <p>Alternatively, you can upload an audio file:</p>
+                    <form method="POST" action="{{ url_for('voice_input') }}" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="upload_audio" class="form-label">Audio File</label>
+                            <input type="file" class="form-control" id="upload_audio" name="audio_data" accept="audio/*" required>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-upload"></i> Upload Audio
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Variables
+    let mediaRecorder;
+    let audioChunks = [];
+    let startTime;
+    let timerInterval;
+
+    // DOM elements
+    const startButton = document.getElementById('start_recording');
+    const stopButton = document.getElementById('stop_recording');
+    const recordingStatus = document.getElementById('recording_status');
+    const recordingTime = document.getElementById('recording_time');
+    const audioPlayer = document.getElementById('audio_player');
+    const recordedAudio = document.getElementById('recorded_audio');
+    const voiceForm = document.getElementById('voice_form');
+    const audioData = document.getElementById('audio_data');
+    const recordAgainButton = document.getElementById('record_again');
+
+    // Event listeners
+    startButton.addEventListener('click', startRecording);
+    stopButton.addEventListener('click', stopRecording);
+    recordAgainButton.addEventListener('click', resetRecording);
+
+    // Functions
+    function startRecording() {
+        // Reset any previous recording
+        audioChunks = [];
+
+        // Request microphone access
+        navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(stream => {
+                // Show recording UI
+                startButton.style.display = 'none';
+                stopButton.style.display = 'inline-block';
+                recordingStatus.style.display = 'block';
+                audioPlayer.style.display = 'none';
+                voiceForm.style.display = 'none';
+
+                // Start timer
+                startTime = Date.now();
+                updateTimer();
+                timerInterval = setInterval(updateTimer, 1000);
+
+                // Create media recorder
+                mediaRecorder = new MediaRecorder(stream);
+                mediaRecorder.start();
+
+                // Collect audio chunks
+                mediaRecorder.addEventListener("dataavailable", event => {
+                    audioChunks.push(event.data);
+                });
+
+                // When recording stops
+                mediaRecorder.addEventListener("stop", () => {
+                    // Create audio blob
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    const audioUrl = URL.createObjectURL(audioBlob);
+
+                    // Set audio player source
+                    recordedAudio.src = audioUrl;
+
+                    // Create a File object from the Blob
+                    const audioFile = new File([audioBlob], "voice_input.webm", {
+                        type: "audio/webm",
+                        lastModified: new Date().getTime()
+                    });
+
+                    console.log("Created audio file:", audioFile);
+
+                    // Set the file input
+                    try {
+                        const dataTransfer = new DataTransfer();
+                        dataTransfer.items.add(audioFile);
+                        audioData.files = dataTransfer.files;
+                        console.log("File added to form input:", audioData.files[0]);
+                    } catch (error) {
+                        console.error("Error setting file input:", error);
+                        // Fallback method for browsers that don't support DataTransfer
+                        alert("Your browser doesn't fully support voice recording. Please try uploading an audio file instead.");
+                    }
+
+                    // Show playback and submit UI
+                    audioPlayer.style.display = 'block';
+                    voiceForm.style.display = 'block';
+                });
+            })
+            .catch(error => {
+                console.error("Error accessing microphone:", error);
+                alert("Could not access microphone. Please check permissions.");
+            });
+    }
+
+    function stopRecording() {
+        // Stop the media recorder
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop();
+
+            // Stop all tracks in the stream
+            mediaRecorder.stream.getTracks().forEach(track => track.stop());
+        }
+
+        // Stop the timer
+        clearInterval(timerInterval);
+
+        // Update UI
+        startButton.style.display = 'inline-block';
+        stopButton.style.display = 'none';
+        recordingStatus.style.display = 'none';
+    }
+
+    function resetRecording() {
+        // Reset UI for a new recording
+        audioPlayer.style.display = 'none';
+        voiceForm.style.display = 'none';
+        startButton.style.display = 'inline-block';
+        recordingTime.textContent = '0:00';
+    }
+
+    function updateTimer() {
+        const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
+        const minutes = Math.floor(elapsedTime / 60);
+        const seconds = elapsedTime % 60;
+        recordingTime.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+</script>
+{% endblock %}

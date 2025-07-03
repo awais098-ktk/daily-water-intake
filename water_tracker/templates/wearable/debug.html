@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+
+{% block title %}Wearable Debug - HydroMate{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-bug"></i> Wearable Debug Information</h2>
+                <a href="{{ url_for('wearable.index') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Wearables
+                </a>
+            </div>
+
+            {% if debug_info %}
+                {% for info in debug_info %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-{{ 'phone' if info.platform == 'google_fit' else 'smartwatch' if info.platform == 'fitbit' else 'cpu' }}"></i>
+                            {{ info.platform.replace('_', ' ').title() }}
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Connection Info</h6>
+                                <table class="table table-sm">
+                                    <tr>
+                                        <td><strong>Platform User ID:</strong></td>
+                                        <td>{{ info.platform_user_id }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Connected At:</strong></td>
+                                        <td>{{ info.connected_at.strftime('%Y-%m-%d %H:%M:%S') if info.connected_at else 'Unknown' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Connection Test:</strong></td>
+                                        <td>
+                                            {% if info.connection_test %}
+                                                <span class="badge bg-success">✅ Passed</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">❌ Failed</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Sample Data (Today)</h6>
+                                {% if info.sample_data %}
+                                    <table class="table table-sm">
+                                        <tr>
+                                            <td><strong>Steps:</strong></td>
+                                            <td>{{ info.sample_data.steps or 0 }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Distance:</strong></td>
+                                            <td>{{ "%.1f"|format(info.sample_data.distance_meters or 0) }}m</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Calories:</strong></td>
+                                            <td>{{ info.sample_data.calories_burned or 0 }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Active Minutes:</strong></td>
+                                            <td>{{ info.sample_data.active_minutes or 0 }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Heart Rate Avg:</strong></td>
+                                            <td>{{ info.sample_data.heart_rate_avg or 'N/A' }}</td>
+                                        </tr>
+                                    </table>
+                                {% else %}
+                                    <div class="alert alert-warning">No sample data available</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        {% if info.data_sources %}
+                        <div class="mt-3">
+                            <h6>Available Data Sources (First 10)</h6>
+                            <div class="row">
+                                {% for source in info.data_sources %}
+                                <div class="col-12 mb-1">
+                                    <small class="text-muted font-monospace">{{ source }}</small>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if info.error %}
+                        <div class="mt-3">
+                            <div class="alert alert-danger">
+                                <strong>Error:</strong> {{ info.error }}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> No wearable connections found. 
+                    <a href="{{ url_for('wearable.index') }}">Connect a device</a> to see debug information.
+                </div>
+            {% endif %}
+
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Troubleshooting Tips</h6>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li><strong>No Data:</strong> Make sure you have activity data in Google Fit app on your phone</li>
+                        <li><strong>Connection Failed:</strong> Try disconnecting and reconnecting the device</li>
+                        <li><strong>Google Fit:</strong> Ensure you have the Google Fit app installed and syncing</li>
+                        <li><strong>Permissions:</strong> Check that the app has permission to read fitness data</li>
+                        <li><strong>Data Sources:</strong> Different devices may use different data source identifiers</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

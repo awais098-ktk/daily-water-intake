@@ -1,0 +1,465 @@
+{% extends 'base.html' %}
+
+{% block title %}Voice Input - HydroMate{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="bi bi-mic-fill"></i> Voice Input</h4>
+            </div>
+            <div class="card-body">
+                <p class="lead">Use your voice to log water intake quickly and easily!</p>
+
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> Try saying something like:
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>For Drinks:</strong>
+                            <ul>
+                                <li>"I drank 200 ml of water"</li>
+                                <li>"Add 8 ounces of tea"</li>
+                                <li>"Log 1 cup of coffee"</li>
+                                <li>"I had a glass of juice"</li>
+                            </ul>
+                        </div>
+
+                    </div>
+                </div>
+
+                <div id="voice-input-container" class="mb-4">
+                    <div class="form-floating mb-3">
+                        <input type="text" class="form-control" id="voice-text" placeholder="Enter your voice input">
+                        <label for="voice-text">Voice Input Text</label>
+                    </div>
+
+                    <div class="alert alert-primary" role="alert">
+                        <i class="bi bi-info-circle"></i> <strong>Voice Recognition Tips:</strong>
+                        <ul class="mb-0">
+                            <li>Speak clearly and at a normal pace</li>
+                            <li>Include both the amount and drink type (e.g., "200 ml of water")</li>
+                            <li>Allow browser access to your microphone when prompted</li>
+                        </ul>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button id="process-voice" class="btn btn-primary">
+                            <i class="bi bi-send"></i> Process Voice Input
+                        </button>
+                        <button id="start-voice" class="btn btn-outline-primary" onclick="testButtonClick()">
+                            <i class="bi bi-mic"></i> Start Voice Recognition
+                        </button>
+                    </div>
+                </div>
+
+                <div id="result-container" class="mt-4" style="display: none;">
+                    <div class="card">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0"><i class="bi bi-check-circle"></i> Result</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="loading-spinner" class="text-center">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p>Processing your request...</p>
+                            </div>
+
+                            <div id="result-content" style="display: none;">
+                                <h5>Detected:</h5>
+                                <ul class="list-group mb-3">
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        Volume:
+                                        <span id="result-volume" class="badge bg-primary rounded-pill">0 ml</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        Drink Type:
+                                        <span id="result-drink-type" class="badge bg-primary rounded-pill">Water</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        Source:
+                                        <span id="result-source" class="badge bg-secondary rounded-pill">Local</span>
+                                    </li>
+                                </ul>
+
+                                <div class="d-grid gap-2">
+                                    <button id="log-intake" class="btn btn-success">
+                                        <i class="bi bi-plus-circle"></i> Log Intake
+                                    </button>
+                                    <button id="try-again" class="btn btn-outline-secondary">
+                                        <i class="bi bi-arrow-repeat"></i> Try Again
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Test function for direct onclick
+    function testButtonClick() {
+        console.log('Button clicked via onclick!');
+    }
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOMContentLoaded event fired');
+
+        // DOM elements
+        const voiceText = document.getElementById('voice-text');
+        const processVoiceBtn = document.getElementById('process-voice');
+        const startVoiceBtn = document.getElementById('start-voice');
+        const resultContainer = document.getElementById('result-container');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const resultContent = document.getElementById('result-content');
+        const resultVolume = document.getElementById('result-volume');
+        const resultDrinkType = document.getElementById('result-drink-type');
+        const logIntakeBtn = document.getElementById('log-intake');
+        const tryAgainBtn = document.getElementById('try-again');
+
+        // Debug: Check if elements are found
+        console.log('DOM elements found:');
+        console.log('startVoiceBtn:', startVoiceBtn);
+        console.log('processVoiceBtn:', processVoiceBtn);
+        console.log('voiceText:', voiceText);
+
+        // Check if startVoiceBtn exists before adding event listener
+        if (!startVoiceBtn) {
+            console.error('startVoiceBtn element not found!');
+            return;
+        }
+
+        // Store the results
+        let processedResults = null;
+
+        // Process voice input
+        processVoiceBtn.addEventListener('click', function() {
+            const text = voiceText.value.trim();
+            console.log('Process button clicked with text:', text);
+
+            if (!text) {
+                alert('Please enter some text or use voice recognition');
+                return;
+            }
+
+            // Show loading state
+            resultContainer.style.display = 'block';
+            loadingSpinner.style.display = 'block';
+            resultContent.style.display = 'none';
+
+            // Send to Flask backend API instead of directly to FastAPI
+            fetch('/api/process_voice', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ text: text })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Response data:', data);
+
+                // Store the results
+                processedResults = data;
+
+                // Update the UI based on input type
+                if (data.success) {
+                    if (data.type === 'drink' && data.result) {
+                        // Handle drink input (existing logic)
+                        displayDrinkResult(data.result);
+                    } else {
+                        // Show error message
+                        console.error('Unknown response type:', data);
+                        alert('Error processing voice input: Unknown response type');
+                        resultContainer.style.display = 'none';
+                    }
+                } else {
+                    // Handle error cases
+                    if (data.type === 'food' || data.type === 'food_not_supported') {
+                        // Food input detected but not supported
+                        displayFoodNotSupported(data);
+                    } else {
+                        // Show error message
+                        console.error('Error in response:', data.error || 'Unknown error');
+                        alert('Error processing voice input: ' + (data.error || 'Unknown error'));
+                        resultContainer.style.display = 'none';
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Fetch error:', error);
+                alert('Error connecting to the server. Please try again.');
+                resultContainer.style.display = 'none';
+            });
+        });
+
+        // Start voice recognition
+        startVoiceBtn.addEventListener('click', function() {
+            console.log('Start Voice Recognition button clicked');
+
+            // Check if the browser supports the Web Speech API
+            if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
+                console.error('Speech recognition not supported');
+                alert('Your browser does not support speech recognition. Please enter text manually.');
+                return;
+            }
+
+            console.log('Speech recognition is supported');
+
+            // Create speech recognition object
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const recognition = new SpeechRecognition();
+
+            // Configure recognition
+            recognition.continuous = false;
+            recognition.interimResults = true;
+            recognition.lang = 'en-US';
+            recognition.maxAlternatives = 1;
+
+            // When recognition starts
+            recognition.onstart = function() {
+                console.log('Voice recognition started');
+                startVoiceBtn.innerHTML = '<i class="bi bi-mic-fill"></i> Listening...';
+                startVoiceBtn.classList.remove('btn-outline-primary');
+                startVoiceBtn.classList.add('btn-danger');
+
+                // Clear previous text
+                voiceText.value = '';
+                voiceText.placeholder = 'Listening...';
+            };
+
+            // When interim results are available
+            recognition.onresult = function(event) {
+                const resultIndex = event.resultIndex;
+                const transcript = event.results[resultIndex][0].transcript;
+                const confidence = event.results[resultIndex][0].confidence;
+
+                console.log(`Transcript: ${transcript}, Confidence: ${confidence}`);
+
+                // Update the text field with the recognized speech
+                voiceText.value = transcript;
+
+                // If this is a final result, automatically process it
+                if (event.results[resultIndex].isFinal) {
+                    console.log('Final result received');
+
+                    // Wait a moment before processing to ensure UI updates
+                    setTimeout(function() {
+                        // Automatically click the process button if we have a good result
+                        if (confidence > 0.5) {
+                            processVoiceBtn.click();
+                        }
+                    }, 500);
+                }
+            };
+
+            // When recognition ends
+            recognition.onend = function() {
+                console.log('Voice recognition ended');
+                startVoiceBtn.innerHTML = '<i class="bi bi-mic"></i> Start Voice Recognition';
+                startVoiceBtn.classList.remove('btn-danger');
+                startVoiceBtn.classList.add('btn-outline-primary');
+                voiceText.placeholder = 'Enter your voice input';
+            };
+
+            // When an error occurs
+            recognition.onerror = function(event) {
+                console.error('Speech recognition error:', event.error);
+
+                let errorMessage = 'Error with speech recognition. ';
+
+                switch(event.error) {
+                    case 'no-speech':
+                        errorMessage += 'No speech was detected. Please try again.';
+                        break;
+                    case 'aborted':
+                        errorMessage += 'Recognition was aborted.';
+                        break;
+                    case 'audio-capture':
+                        errorMessage += 'Could not capture audio. Please check your microphone.';
+                        break;
+                    case 'network':
+                        errorMessage += 'Network error occurred. Please check your connection.';
+                        break;
+                    case 'not-allowed':
+                    case 'service-not-allowed':
+                        errorMessage += 'Microphone access not allowed. Please check your browser permissions.';
+                        break;
+                    default:
+                        errorMessage += 'Please try again or enter text manually.';
+                }
+
+                alert(errorMessage);
+
+                startVoiceBtn.innerHTML = '<i class="bi bi-mic"></i> Start Voice Recognition';
+                startVoiceBtn.classList.remove('btn-danger');
+                startVoiceBtn.classList.add('btn-outline-primary');
+                voiceText.placeholder = 'Enter your voice input';
+            };
+
+            // Start recognition
+            try {
+                console.log('Attempting to start voice recognition...');
+                recognition.start();
+                console.log('Voice recognition start() called successfully');
+            } catch (error) {
+                console.error('Error starting voice recognition:', error);
+                alert('Could not start voice recognition. Please try again or enter text manually.');
+            }
+        });
+
+        // Log intake button
+        logIntakeBtn.addEventListener('click', function() {
+            if (!processedResults || !processedResults.result) {
+                alert('No valid results to log');
+                return;
+            }
+
+            const result = processedResults.result;
+            console.log('Logging intake with data:', result);
+
+            // Create a form to submit the data
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/log_water';
+            form.style.display = 'none';
+
+            // Add the volume
+            const volumeInput = document.createElement('input');
+            volumeInput.type = 'hidden';
+            volumeInput.name = 'amount';
+
+            // Make sure we have a numeric value for the volume
+            let volumeValue = 0;
+
+            // First try to use volume_ml if it's a number
+            if (typeof result.volume_ml === 'number' && result.volume_ml > 0) {
+                volumeValue = result.volume_ml;
+                console.log('Using volume_ml value:', volumeValue);
+            }
+            // Then try to extract from volume string
+            else if (result.volume) {
+                // Try to extract a number from the volume string
+                const match = /(\d+)/.exec(result.volume);
+                if (match) {
+                    volumeValue = parseInt(match[1], 10);
+                    console.log('Extracted volume from string:', volumeValue);
+                }
+            }
+
+            // Check if the original text contains a volume we can use
+            if (volumeValue === 0 && voiceText.value) {
+                // Look for patterns like "200ml" or "200 ml" in the text
+                const textMatch = /(\d+)\s*ml/i.exec(voiceText.value);
+                if (textMatch) {
+                    volumeValue = parseInt(textMatch[1], 10);
+                    console.log('Extracted volume from original text:', volumeValue);
+                }
+            }
+
+            // Use the extracted volume or default to 200ml
+            volumeInput.value = volumeValue > 0 ? volumeValue : 200;
+            console.log('Final volume value:', volumeInput.value);
+            form.appendChild(volumeInput);
+
+            // Add the drink type
+            const drinkTypeInput = document.createElement('input');
+            drinkTypeInput.type = 'hidden';
+            drinkTypeInput.name = 'drink_type_id';
+            drinkTypeInput.value = result.drink_type_id || '1'; // Default to water (id=1)
+            form.appendChild(drinkTypeInput);
+
+            // Add notes
+            const notesInput = document.createElement('input');
+            notesInput.type = 'hidden';
+            notesInput.name = 'notes';
+            notesInput.value = 'Logged via voice input: ' + voiceText.value;
+            form.appendChild(notesInput);
+
+            // Add a debug message
+            console.log('Submitting form with values:', {
+                amount: volumeInput.value,
+                drink_type_id: drinkTypeInput.value,
+                notes: notesInput.value
+            });
+
+            // Submit the form
+            document.body.appendChild(form);
+            form.submit();
+        });
+
+        // Try again button
+        tryAgainBtn.addEventListener('click', function() {
+            resultContainer.style.display = 'none';
+            voiceText.value = '';
+            processedResults = null;
+        });
+
+        // Helper function to display drink results
+        function displayDrinkResult(result) {
+            // Make sure we display the correct volume
+            let displayVolume = '0 ml';
+            if (result.volume_ml && result.volume_ml > 0) {
+                displayVolume = `${result.volume_ml} ml`;
+            } else if (result.volume) {
+                displayVolume = result.volume;
+            }
+
+            // Log the volume for debugging
+            console.log('Volume from result:', result.volume, 'Volume_ml:', result.volume_ml, 'Display volume:', displayVolume);
+
+            resultVolume.textContent = displayVolume;
+            resultDrinkType.textContent = result.drink_type || 'Water';
+
+            // Show the source
+            const resultSource = document.getElementById('result-source');
+            if (resultSource) {
+                resultSource.textContent = 'Voice Recognition';
+                resultSource.classList.remove('bg-info');
+                resultSource.classList.add('bg-success');
+            }
+
+            // Hide loading, show results
+            loadingSpinner.style.display = 'none';
+            resultContent.style.display = 'block';
+        }
+
+        // Helper function to display food not supported message
+        function displayFoodNotSupported(data) {
+            // Clear existing content and show food not supported message
+            resultContent.innerHTML = `
+                <div class="alert alert-warning">
+                    <h5><i class="bi bi-exclamation-triangle"></i> Food Logging Not Supported</h5>
+                    <p>Voice logging for food is not currently available. Please use the <a href="{{ url_for('eating_dashboard') }}" class="alert-link">Eating Tracker</a> to log your meals manually.</p>
+                    <p><strong>Recognized text:</strong> "${data.text || 'Unknown'}"</p>
+                </div>
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('eating_dashboard') }}" class="btn btn-primary">
+                        <i class="bi bi-journal-text"></i> Go to Eating Tracker
+                    </a>
+                    <button class="btn btn-outline-secondary" onclick="resetForm()">
+                        <i class="bi bi-arrow-repeat"></i> Try Again
+                    </button>
+                </div>
+            `;
+
+            // Hide loading, show results
+            loadingSpinner.style.display = 'none';
+            resultContent.style.display = 'block';
+        }
+
+        // Food logging function removed - no longer supported
+
+        // Function to reset form
+        function resetForm() {
+            resultContainer.style.display = 'none';
+            voiceText.value = '';
+        }
+    });
+</script>
+{% endblock %}

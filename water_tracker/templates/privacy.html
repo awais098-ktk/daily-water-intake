@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Privacy Policy - HydroMate{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="mb-0">Privacy Policy</h2>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Last updated: {{ moment().format('MMMM DD, YYYY') }}</p>
+                    
+                    <h4>1. Information We Collect</h4>
+                    <p>HydroMate collects the following information to provide water intake tracking services:</p>
+                    <ul>
+                        <li><strong>Account Information:</strong> Username, email, and profile data</li>
+                        <li><strong>Water Intake Data:</strong> Daily water consumption records and drink types</li>
+                        <li><strong>Fitness Data:</strong> Activity data from connected wearable devices (with your consent)</li>
+                        <li><strong>Usage Data:</strong> App usage patterns to improve our services</li>
+                    </ul>
+
+                    <h4>2. How We Use Your Information</h4>
+                    <p>We use your information to:</p>
+                    <ul>
+                        <li>Track and display your daily water intake progress</li>
+                        <li>Provide personalized hydration recommendations</li>
+                        <li>Sync data with connected fitness devices</li>
+                        <li>Improve app functionality and user experience</li>
+                    </ul>
+
+                    <h4>3. Data Sharing</h4>
+                    <p>We do not sell, trade, or share your personal information with third parties except:</p>
+                    <ul>
+                        <li>With your explicit consent for fitness device integration</li>
+                        <li>To comply with legal requirements</li>
+                        <li>To protect our rights and safety</li>
+                    </ul>
+
+                    <h4>4. Fitness Device Integration</h4>
+                    <p>When you connect fitness devices (like Google Fit), we:</p>
+                    <ul>
+                        <li>Only access activity data necessary for hydration recommendations</li>
+                        <li>Store this data securely in our database</li>
+                        <li>Allow you to disconnect devices at any time</li>
+                        <li>Delete associated data when you disconnect</li>
+                    </ul>
+
+                    <h4>5. Data Security</h4>
+                    <p>We implement appropriate security measures to protect your information:</p>
+                    <ul>
+                        <li>Encrypted data transmission</li>
+                        <li>Secure database storage</li>
+                        <li>Regular security updates</li>
+                        <li>Limited access to personal data</li>
+                    </ul>
+
+                    <h4>6. Your Rights</h4>
+                    <p>You have the right to:</p>
+                    <ul>
+                        <li>Access your personal data</li>
+                        <li>Correct inaccurate information</li>
+                        <li>Delete your account and data</li>
+                        <li>Export your data</li>
+                        <li>Withdraw consent for data processing</li>
+                    </ul>
+
+                    <h4>7. Data Retention</h4>
+                    <p>We retain your data as long as your account is active. When you delete your account, we remove your personal data within 30 days.</p>
+
+                    <h4>8. Contact Us</h4>
+                    <p>If you have questions about this privacy policy, please contact us at:</p>
+                    <p><strong>Email:</strong> privacy@hydromate.app<br>
+                    <strong>Address:</strong> HydroMate Privacy Team</p>
+
+                    <div class="mt-4">
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-primary">Back to Dashboard</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

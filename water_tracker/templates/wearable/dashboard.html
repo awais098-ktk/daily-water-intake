@@ -1,0 +1,562 @@
+{% extends "base.html" %}
+
+{% block title %}Wearable Integration - Water Intake Tracker{% endblock %}
+
+{% block extra_css %}
+<style>
+    .wearable-card {
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    
+    .connection-card {
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+        transition: all 0.3s ease;
+    }
+    
+    .connection-card.connected {
+        border-color: #28a745;
+        background-color: #f8fff9;
+    }
+    
+    .platform-icon {
+        font-size: 2rem;
+        margin-bottom: 10px;
+    }
+    
+    .activity-metric {
+        text-align: center;
+        padding: 15px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 8px;
+        margin-bottom: 10px;
+    }
+    
+    .metric-value {
+        font-size: 1.5rem;
+        font-weight: bold;
+        display: block;
+    }
+    
+    .metric-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+    
+    .sync-status {
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+    
+    .recommendation-card {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        color: white;
+        border-radius: 10px;
+        padding: 20px;
+    }
+
+    /* Prevent text cursor/selection issues */
+    .connection-card h6,
+    .connection-card p,
+    .connection-card div {
+        user-select: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        cursor: default;
+        outline: none;
+    }
+
+    .connection-card h6:focus,
+    .connection-card p:focus,
+    .connection-card div:focus {
+        outline: none !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    /* Prevent text cursor on all content */
+    .alert, .alert *,
+    .card-body, .card-body *,
+    .metric-value, .metric-label,
+    small, p, div, span {
+        user-select: none !important;
+        -webkit-user-select: none !important;
+        -moz-user-select: none !important;
+        -ms-user-select: none !important;
+        cursor: default !important;
+        outline: none !important;
+    }
+
+    .alert:focus, .alert *:focus,
+    .card-body:focus, .card-body *:focus {
+        outline: none !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">
+                <i class="bi bi-smartwatch"></i> Wearable Integration
+            </h2>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Connected Devices -->
+        <div class="col-md-8">
+            <div class="card wearable-card">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-link-45deg"></i> Connected Devices</h5>
+                    <div>
+                        <a href="{{ url_for('wearable.connect') }}" class="btn btn-sm btn-light me-2">
+                            <i class="bi bi-plus-circle"></i> Connect Device
+                        </a>
+                        <a href="{{ url_for('wearable.sync_all') }}" class="btn btn-sm btn-light">
+                            <i class="bi bi-arrow-clockwise"></i> Sync All
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if connections %}
+                        {% for connection in connections %}
+                        <div class="connection-card connected">
+                            <div class="row align-items-center">
+                                <div class="col-md-2 text-center">
+                                    <div class="platform-icon text-success">
+                                        {% if connection.platform == 'google_fit' %}
+                                            <i class="bi bi-google"></i>
+                                        {% elif connection.platform == 'fitbit' %}
+                                            <i class="bi bi-smartwatch"></i>
+                                        {% elif connection.platform == 'mock' %}
+                                            <i class="bi bi-cpu"></i>
+                                        {% else %}
+                                            <i class="bi bi-device-hdd"></i>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6 class="mb-1" contenteditable="false" spellcheck="false">{{ connection.platform.replace('_', ' ').title() }}</h6>
+                                    <p class="mb-1 text-muted" contenteditable="false" spellcheck="false">Connected {{ connection.connected_at.strftime('%B %d, %Y') }}</p>
+                                    <div class="sync-status">
+                                        {% if connection.last_sync %}
+                                            Last sync: {{ connection.last_sync.strftime('%Y-%m-%d %H:%M') }}
+                                        {% else %}
+                                            Never synced
+                                        {% endif %}
+                                    </div>
+
+                                </div>
+                                <div class="col-md-4 text-end">
+                                    <button class="btn btn-sm btn-outline-primary me-2" onclick="syncConnection({{ connection.id }})">
+                                        <i class="bi bi-arrow-clockwise"></i> Sync
+                                    </button>
+                                    <a href="{{ url_for('wearable.disconnect', connection_id=connection.id) }}"
+                                       class="btn btn-sm btn-outline-danger"
+                                       onclick="return confirm('Are you sure you want to disconnect this device?')">
+                                        <i class="bi bi-x-circle"></i> Disconnect
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-smartwatch" style="font-size: 3rem; color: #dee2e6;"></i>
+                            <h5 class="mt-3 text-muted">No Devices Connected</h5>
+                            <p class="text-muted">Connect your fitness tracker to get personalized hydration recommendations based on your activity.</p>
+                            <a href="{{ url_for('wearable.connect') }}" class="btn btn-primary">
+                                <i class="bi bi-plus-circle"></i> Connect Your First Device
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            {% if recent_activity %}
+            <div class="card wearable-card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-activity"></i> Recent Activity</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for activity in recent_activity[:3] %}
+                        <div class="col-md-4">
+                            <div class="activity-metric">
+                                <span class="metric-value">{{ activity.steps|default(0)|int }}</span>
+                                <span class="metric-label">Steps</span>
+                                <div class="mt-2">
+                                    <small>{{ activity.date.strftime('%m/%d') }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    {% if recent_activity|length > 3 %}
+                    <div class="mt-3">
+                        <button class="btn btn-sm btn-outline-success" onclick="showActivityHistory()">
+                            <i class="bi bi-clock-history"></i> View Full History
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Sleep Data -->
+            {% if recent_activity %}
+            <div class="card wearable-card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="bi bi-moon-stars"></i> Recent Sleep</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for activity in recent_activity[:3] %}
+                        {% if activity.sleep_duration_minutes %}
+                        <div class="col-md-4">
+                            <div class="activity-metric" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                <span class="metric-value">{{ (activity.sleep_duration_minutes / 60)|round(1) }}h</span>
+                                <span class="metric-label">Sleep Duration</span>
+                                <div class="mt-2">
+                                    <small>{{ activity.date.strftime('%m/%d') }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+
+                    <!-- Sleep Quality Metrics -->
+                    {% if recent_activity[0] and recent_activity[0].sleep_duration_minutes %}
+                    <div class="row mt-3">
+                        <div class="col-6">
+                            <div class="text-center p-2 bg-light rounded">
+                                <div class="fw-bold text-primary">{{ recent_activity[0].sleep_efficiency|default(0)|round(1) }}%</div>
+                                <small class="text-muted">Sleep Efficiency</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center p-2 bg-light rounded">
+                                <div class="fw-bold text-success">{{ recent_activity[0].deep_sleep_minutes|default(0) }}min</div>
+                                <small class="text-muted">Deep Sleep</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Hydration Recommendations -->
+        <div class="col-md-4">
+            {% if latest_recommendation %}
+            <div class="recommendation-card mb-4">
+                <h6 class="mb-3"><i class="bi bi-droplet-fill"></i> Today's Recommendation</h6>
+                <div class="text-center">
+                    <div style="font-size: 2.5rem; font-weight: bold;">
+                        {{ latest_recommendation.total_recommendation }}ml
+                    </div>
+                    <div style="font-size: 0.9rem; opacity: 0.9;">
+                        Base: {{ latest_recommendation.base_recommendation }}ml + 
+                        Activity: {{ latest_recommendation.activity_bonus }}ml
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <small>{{ latest_recommendation.reasoning }}</small>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Quick Stats -->
+            <div class="card wearable-card">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0"><i class="bi bi-graph-up"></i> Quick Stats</h6>
+                </div>
+                <div class="card-body">
+                    <div id="quickStats">
+                        <div class="text-center py-3">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2 text-muted">Loading activity data...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hydration Tips -->
+            <div class="card wearable-card">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0"><i class="bi bi-lightbulb"></i> Hydration Tips</h6>
+                </div>
+                <div class="card-body">
+                    <div id="hydrationTips">
+                        <div class="text-center py-3">
+                            <div class="spinner-border text-warning" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2 text-muted">Loading tips...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Activity History Modal -->
+<div class="modal fade" id="activityHistoryModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Activity History</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="activityHistoryContent">
+                    <div class="text-center py-3">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadQuickStats();
+    loadHydrationTips();
+
+    // Prevent text cursor on all elements
+    preventTextCursor();
+});
+
+function preventTextCursor() {
+    // Add event listener to prevent text selection
+    document.addEventListener('selectstart', function(e) {
+        e.preventDefault();
+        return false;
+    });
+
+    // Prevent focus on all elements that might show cursor
+    document.addEventListener('click', function(e) {
+        if (e.target.tagName !== 'BUTTON' && e.target.tagName !== 'A' && e.target.tagName !== 'INPUT') {
+            e.target.blur();
+        }
+    });
+}
+
+function syncConnection(connectionId) {
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Syncing...';
+    button.disabled = true;
+    
+    fetch(`/wearable/api/sync/${connectionId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('Sync completed successfully!', 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showAlert('Sync failed: ' + (data.error || 'Unknown error'), 'error');
+            }
+        })
+        .catch(error => {
+            showAlert('Sync failed: ' + error.message, 'error');
+        })
+        .finally(() => {
+            button.innerHTML = originalText;
+            button.disabled = false;
+        });
+}
+
+
+
+function loadQuickStats() {
+    fetch('/wearable/api/activity-data?days=7')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.data.length > 0) {
+                const latest = data.data[0];
+                const weekTotal = data.data.reduce((sum, day) => sum + (day.steps || 0), 0);
+                const avgSteps = Math.round(weekTotal / 7);
+                
+                const sleepHours = latest.sleep_duration_minutes ? (latest.sleep_duration_minutes / 60).toFixed(1) : 0;
+                const sleepEfficiency = latest.sleep_efficiency || 0;
+
+                document.getElementById('quickStats').innerHTML = `
+                    <div class="row text-center" contenteditable="false" spellcheck="false" style="user-select: none; cursor: default;">
+                        <div class="col-6" contenteditable="false" style="user-select: none; cursor: default;">
+                            <div class="metric-value text-primary" contenteditable="false" style="user-select: none; cursor: default;">${latest.steps || 0}</div>
+                            <div class="metric-label" contenteditable="false" style="user-select: none; cursor: default;">Today's Steps</div>
+                        </div>
+                        <div class="col-6" contenteditable="false" style="user-select: none; cursor: default;">
+                            <div class="metric-value text-success" contenteditable="false" style="user-select: none; cursor: default;">${avgSteps}</div>
+                            <div class="metric-label" contenteditable="false" style="user-select: none; cursor: default;">7-Day Average</div>
+                        </div>
+                        <div class="col-6 mt-2" contenteditable="false" style="user-select: none; cursor: default;">
+                            <div class="metric-value text-info" contenteditable="false" style="user-select: none; cursor: default;">${latest.active_minutes || 0}</div>
+                            <div class="metric-label" contenteditable="false" style="user-select: none; cursor: default;">Active Minutes</div>
+                        </div>
+                        <div class="col-6 mt-2" contenteditable="false" style="user-select: none; cursor: default;">
+                            <div class="metric-value text-warning" contenteditable="false" style="user-select: none; cursor: default;">${latest.calories_burned || 0}</div>
+                            <div class="metric-label" contenteditable="false" style="user-select: none; cursor: default;">Calories</div>
+                        </div>
+                        <div class="col-6 mt-2" contenteditable="false" style="user-select: none; cursor: default;">
+                            <div class="metric-value text-dark" contenteditable="false" style="user-select: none; cursor: default;">${sleepHours}h</div>
+                            <div class="metric-label" contenteditable="false" style="user-select: none; cursor: default;">Sleep Duration</div>
+                        </div>
+                        <div class="col-6 mt-2" contenteditable="false" style="user-select: none; cursor: default;">
+                            <div class="metric-value text-secondary" contenteditable="false" style="user-select: none; cursor: default;">${sleepEfficiency}%</div>
+                            <div class="metric-label" contenteditable="false" style="user-select: none; cursor: default;">Sleep Efficiency</div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                document.getElementById('quickStats').innerHTML = `
+                    <div class="text-center text-muted">
+                        <i class="bi bi-exclamation-circle"></i>
+                        <p class="mt-2">No activity data available</p>
+                        <small>Connect a device and sync to see stats</small>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            document.getElementById('quickStats').innerHTML = `
+                <div class="text-center text-danger">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <p class="mt-2">Failed to load stats</p>
+                </div>
+            `;
+        });
+}
+
+function loadHydrationTips() {
+    fetch('/wearable/api/hydration-recommendation')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.tips) {
+                const tipsHtml = data.tips.map(tip => `
+                    <div class="alert alert-light py-2 mb-2" contenteditable="false" spellcheck="false" style="user-select: none; cursor: default;">
+                        <small contenteditable="false" spellcheck="false" style="user-select: none; cursor: default;"><i class="bi bi-lightbulb-fill text-warning"></i> ${tip}</small>
+                    </div>
+                `).join('');
+                
+                document.getElementById('hydrationTips').innerHTML = tipsHtml;
+            } else {
+                document.getElementById('hydrationTips').innerHTML = `
+                    <div class="text-center text-muted">
+                        <i class="bi bi-info-circle"></i>
+                        <p class="mt-2">No tips available</p>
+                        <small>Sync activity data to get personalized tips</small>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            document.getElementById('hydrationTips').innerHTML = `
+                <div class="text-center text-muted">
+                    <i class="bi bi-exclamation-circle"></i>
+                    <p class="mt-2">Unable to load tips</p>
+                </div>
+            `;
+        });
+}
+
+function showActivityHistory() {
+    const modal = new bootstrap.Modal(document.getElementById('activityHistoryModal'));
+    modal.show();
+    
+    fetch('/wearable/api/activity-data?days=30')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const historyHtml = data.data.map(activity => {
+                    const sleepHours = activity.sleep_duration_minutes ? (activity.sleep_duration_minutes / 60).toFixed(1) : 'N/A';
+                    const sleepEfficiency = activity.sleep_efficiency ? activity.sleep_efficiency.toFixed(1) + '%' : 'N/A';
+
+                    return `
+                        <div class="row border-bottom py-2">
+                            <div class="col-2">${activity.date}</div>
+                            <div class="col-2">${activity.steps || 0} steps</div>
+                            <div class="col-2">${activity.active_minutes || 0} min</div>
+                            <div class="col-2">${activity.calories_burned || 0} cal</div>
+                            <div class="col-2">${sleepHours}h</div>
+                            <div class="col-2">${sleepEfficiency}</div>
+                        </div>
+                    `;
+                }).join('');
+
+                document.getElementById('activityHistoryContent').innerHTML = `
+                    <div class="row border-bottom fw-bold py-2">
+                        <div class="col-2">Date</div>
+                        <div class="col-2">Steps</div>
+                        <div class="col-2">Active</div>
+                        <div class="col-2">Calories</div>
+                        <div class="col-2">Sleep</div>
+                        <div class="col-2">Efficiency</div>
+                    </div>
+                    ${historyHtml}
+                `;
+            }
+        });
+}
+
+function getActivityLevelColor(level) {
+    switch(level) {
+        case 'high': return 'success';
+        case 'moderate': return 'warning';
+        case 'low': return 'info';
+        default: return 'secondary';
+    }
+}
+
+function showAlert(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.querySelector('.container').insertBefore(alertDiv, document.querySelector('.row'));
+    
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+
+// Add spinning animation for sync button
+const style = document.createElement('style');
+style.textContent = `
+    .spin {
+        animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}

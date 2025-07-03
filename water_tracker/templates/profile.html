@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+
+{% block title %}Profile - HydroMate{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4 class="mb-0">Profile</h4>
+            </div>
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    {% if current_user.avatar_path %}
+                        <div class="profile-image-container mx-auto mb-3">
+                            <img src="{{ url_for('static', filename=current_user.avatar_path) }}" alt="{{ current_user.username }}" class="profile-image">
+                        </div>
+                    {% else %}
+                        <div class="avatar-circle mx-auto mb-3">
+                            <span class="avatar-text">{{ current_user.username[0]|upper }}</span>
+                        </div>
+                    {% endif %}
+                    <h3>{{ current_user.username }}</h3>
+                    <p class="text-muted">{{ current_user.email }}</p>
+                </div>
+                <div class="d-grid">
+                    <a href="{{ url_for('settings') }}" class="btn btn-primary">
+                        <i class="bi bi-gear"></i> Edit Settings
+                    </a>
+                </div>
+            </div>
+            <div class="card-footer text-muted text-center">
+                Member since {{ join_date if join_date else 'N/A' }}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4 class="mb-0">Statistics</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <div class="stat-card p-3 border rounded text-center">
+                            <h2 class="stat-value">{{ total_logs }}</h2>
+                            <p class="stat-label mb-0">Total Logs</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="stat-card p-3 border rounded text-center">
+                            <h2 class="stat-value">{{ total_amount }}</h2>
+                            <p class="stat-label mb-0">Total {{ current_user.preferred_unit }}</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="stat-card p-3 border rounded text-center">
+                            <h2 class="stat-value">{{ streak }}</h2>
+                            <p class="stat-label mb-0">Day Streak</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="stat-card p-3 border rounded text-center">
+                            <h2 class="stat-value">{{ best_day.amount }}</h2>
+                            <p class="stat-label mb-0">Best Day</p>
+                            {% if best_day.date %}
+                                <small class="text-muted">{{ best_day.date }}</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">Achievements</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <div class="achievement p-3 border rounded text-center {{ 'achievement-unlocked' if total_logs >= 1 else 'achievement-locked' }}">
+                            <i class="bi bi-trophy{{ '-fill' if total_logs >= 1 else '' }} fs-1"></i>
+                            <h5>First Sip</h5>
+                            <p class="small mb-0">Log your first water intake</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="achievement p-3 border rounded text-center {{ 'achievement-unlocked' if total_logs >= 10 else 'achievement-locked' }}">
+                            <i class="bi bi-trophy{{ '-fill' if total_logs >= 10 else '' }} fs-1"></i>
+                            <h5>Hydration Habit</h5>
+                            <p class="small mb-0">Log 10 water intakes</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="achievement p-3 border rounded text-center {{ 'achievement-unlocked' if streak >= 3 else 'achievement-locked' }}">
+                            <i class="bi bi-trophy{{ '-fill' if streak >= 3 else '' }} fs-1"></i>
+                            <h5>Consistency</h5>
+                            <p class="small mb-0">3-day streak</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="achievement p-3 border rounded text-center {{ 'achievement-unlocked' if streak >= 7 else 'achievement-locked' }}">
+                            <i class="bi bi-trophy{{ '-fill' if streak >= 7 else '' }} fs-1"></i>
+                            <h5>Weekly Warrior</h5>
+                            <p class="small mb-0">7-day streak</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="achievement p-3 border rounded text-center {{ 'achievement-unlocked' if best_day.amount >= 2000 else 'achievement-locked' }}">
+                            <i class="bi bi-trophy{{ '-fill' if best_day.amount >= 2000 else '' }} fs-1"></i>
+                            <h5>Hydration Hero</h5>
+                            <p class="small mb-0">Drink 2000ml in one day</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="achievement p-3 border rounded text-center {{ 'achievement-unlocked' if total_amount >= 10000 else 'achievement-locked' }}">
+                            <i class="bi bi-trophy{{ '-fill' if total_amount >= 10000 else '' }} fs-1"></i>
+                            <h5>Hydration Master</h5>
+                            <p class="small mb-0">Drink 10,000ml total</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .avatar-circle {
+        width: 100px;
+        height: 100px;
+        background-color: var(--accent-color);
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .avatar-text {
+        font-size: 48px;
+        color: white;
+        font-weight: bold;
+    }
+
+    .profile-image-container {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        overflow: hidden;
+        border: 3px solid var(--accent-color);
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .profile-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .stat-value {
+        font-weight: bold;
+        color: var(--accent-color);
+    }
+
+    .stat-label {
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .achievement-unlocked i {
+        color: var(--accent-color);
+    }
+
+    .achievement-locked {
+        opacity: 0.5;
+    }
+
+    .achievement-locked i {
+        color: #6c757d;
+    }
+</style>
+{% endblock %}

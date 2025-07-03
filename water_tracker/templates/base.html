@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}HydroMate - Water Intake Tracker{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="light-theme">
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="HydroMate Logo" height="40" class="me-2">
+                HydroMate
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    {% if current_user.is_authenticated %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('dashboard') }}">
+                                <i class="bi bi-speedometer2"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('eating_dashboard') }}">
+                                <i class="bi bi-egg-fried"></i> Eating Tracker
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('chart') }}">
+                                <i class="bi bi-bar-chart"></i> Chart
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('profile') }}">
+                                <i class="bi bi-person"></i> Profile
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('settings') }}">
+                                <i class="bi bi-gear"></i> Settings
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('barcode_scanner') }}">
+                                <i class="bi bi-upc-scan"></i> Barcode Scanner
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+
+                <div class="d-flex align-items-center">
+                    <!-- Theme Switch -->
+                    <div class="theme-switch-wrapper me-3">
+                        <label class="theme-switch" for="themeSwitch">
+                            <input type="checkbox" id="themeSwitch" onchange="toggleTheme()">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="ms-2 text-light"><i class="bi bi-moon-stars"></i></span>
+                    </div>
+
+                    <!-- Color Picker -->
+                    <div class="color-picker me-3">
+                        <select id="accentColor" onchange="changeAccentColor(this.value)">
+                            <option value="blue">Blue</option>
+                            <option value="green">Green</option>
+                            <option value="purple">Purple</option>
+                            <option value="orange">Orange</option>
+                            <option value="red">Red</option>
+                        </select>
+                    </div>
+
+                    {% if current_user.is_authenticated %}
+                        <a class="btn btn-outline-light btn-sm" href="{{ url_for('logout') }}">
+                            <i class="bi bi-box-arrow-right"></i> Logout
+                        </a>
+                    {% else %}
+                        <a class="btn btn-outline-light btn-sm me-2" href="{{ url_for('login') }}">Login</a>
+                        <a class="btn btn-light btn-sm" href="{{ url_for('register') }}">Register</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <footer class="mt-5 py-3 text-center">
+        <div class="container">
+            <p class="mb-0">&copy; 2025 HydroMate - Water Intake Tracker</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/dynamic-logo.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/performance-fix.js') }}"></script>
+    {% if show_weather_widget is defined and show_weather_widget %}
+    <script src="{{ url_for('static', filename='js/smart_hydration/direct_fix_weather.js') }}"></script>
+    {% endif %}
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Container - HydroMate{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">Edit Container</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('edit_container', container_id=container.id) }}" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Container Name</label>
+                        <input type="text" class="form-control" id="name" name="name" value="{{ container.name }}" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="volume" class="form-label">Volume (ml)</label>
+                        <input type="number" class="form-control" id="volume" name="volume" min="1" value="{{ container.volume }}" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="drink_type_id" class="form-label">Drink Type</label>
+                        <select class="form-select" id="drink_type_id" name="drink_type_id">
+                            {% for drink_type in drink_types %}
+                            <option value="{{ drink_type.id }}" {% if drink_type.id == container.drink_type_id %}selected{% endif %}>
+                                {{ drink_type.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="container_image" class="form-label">Container Image</label>
+                        {% if container.image_path %}
+                        <div class="mb-2">
+                            <img src="{{ url_for('static', filename=container.image_path) }}" class="img-thumbnail" style="max-height: 200px;" alt="{{ container.name }}">
+                        </div>
+                        {% endif %}
+                        <input type="file" class="form-control" id="container_image" name="container_image" accept="image/*">
+                        <div class="form-text">Upload a new image or leave blank to keep the current one</div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">Update Container</button>
+                        <a href="{{ url_for('containers') }}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,827 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Meal Container - HydroMate{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-card {
+        border-left: 4px solid var(--accent-color);
+        margin-bottom: 20px;
+    }
+    
+    .food-item-row {
+        background-color: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 10px;
+        position: relative;
+    }
+    
+    .remove-item-btn {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: none;
+        border: none;
+        color: #dc3545;
+        font-size: 1.2rem;
+        cursor: pointer;
+    }
+    
+    .nutrition-preview {
+        background-color: #e7f3ff;
+        border-radius: 8px;
+        padding: 20px;
+        margin-top: 20px;
+    }
+    
+    .macro-display {
+        text-align: center;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+    }
+    
+    .calories-display {
+        background-color: #fff3cd;
+        border: 1px solid #ffeaa7;
+    }
+    
+    .carbs-display {
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+    }
+    
+    .fats-display {
+        background-color: #d1ecf1;
+        border: 1px solid #bee5eb;
+    }
+    
+    .proteins-display {
+        background-color: #d4edda;
+        border: 1px solid #c3e6cb;
+    }
+    
+    .food-search-input {
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        padding: 10px;
+    }
+    
+    .food-search-input:focus {
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 0.2rem rgba(77, 166, 255, 0.25);
+    }
+    
+    .food-suggestion {
+        padding: 10px;
+        border-bottom: 1px solid #e9ecef;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    
+    .food-suggestion:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .food-suggestion:last-child {
+        border-bottom: none;
+    }
+    
+    .suggestions-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid #e9ecef;
+        border-top: none;
+        border-radius: 0 0 8px 8px;
+        max-height: 200px;
+        overflow-y: auto;
+        z-index: 1000;
+        display: none;
+    }
+    
+    .meal-type-selector {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+    }
+    
+    .meal-type-option {
+        flex: 1;
+        min-width: 120px;
+        padding: 15px;
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        background: white;
+    }
+    
+    .meal-type-option:hover {
+        border-color: var(--accent-color);
+        background-color: rgba(77, 166, 255, 0.1);
+    }
+    
+    .meal-type-option.selected {
+        border-color: var(--accent-color);
+        background-color: var(--accent-color);
+        color: white;
+    }
+    
+    .meal-type-option i {
+        font-size: 1.5rem;
+        margin-bottom: 5px;
+        display: block;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2><i class="bi bi-plus-circle text-primary"></i> Add Meal Container</h2>
+            <p class="text-muted">Create a new meal container with multiple food items</p>
+        </div>
+    </div>
+
+    <form method="POST" action="{{ url_for('add_meal_container') }}" enctype="multipart/form-data" id="meal-container-form">
+        <div class="row">
+            <!-- Left Column - Container Details -->
+            <div class="col-lg-8">
+                <!-- Basic Information -->
+                <div class="card form-card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-info-circle"></i> Container Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">Container Name *</label>
+                                    <input type="text" class="form-control" id="name" name="name" required
+                                           placeholder="e.g., My Breakfast Bowl, Protein Smoothie">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="container_image" class="form-label">Container Image</label>
+                                    <input type="file" class="form-control" id="container_image" name="container_image"
+                                           accept="image/*">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="2"
+                                      placeholder="Optional description of this meal container"></textarea>
+                        </div>
+                        
+                        <!-- Meal Type Selection -->
+                        <div class="mb-3">
+                            <label class="form-label">Meal Type</label>
+                            <div class="meal-type-selector">
+                                <div class="meal-type-option" data-value="breakfast">
+                                    <i class="bi bi-sunrise"></i>
+                                    <div>Breakfast</div>
+                                </div>
+                                <div class="meal-type-option" data-value="lunch">
+                                    <i class="bi bi-sun"></i>
+                                    <div>Lunch</div>
+                                </div>
+                                <div class="meal-type-option" data-value="dinner">
+                                    <i class="bi bi-moon"></i>
+                                    <div>Dinner</div>
+                                </div>
+                                <div class="meal-type-option" data-value="snack">
+                                    <i class="bi bi-star"></i>
+                                    <div>Snack</div>
+                                </div>
+                                <div class="meal-type-option" data-value="meal">
+                                    <i class="bi bi-circle"></i>
+                                    <div>General</div>
+                                </div>
+                            </div>
+                            <input type="hidden" id="meal_type" name="meal_type" value="meal">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Food Items -->
+                <div class="card form-card">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="bi bi-plus-square"></i> Food Items</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info mb-4">
+                            <i class="bi bi-info-circle"></i>
+                            <strong>What are Food Items?</strong><br>
+                            Add individual food items with their quantities to create a complete meal container.
+                            For example, if you're creating a "Breakfast Bowl" container, you might add:
+                            <ul class="mb-0 mt-2">
+                                <li>Oats (50g)</li>
+                                <li>Banana (100g)</li>
+                                <li>Almonds (20g)</li>
+                            </ul>
+                            The total nutrition will be calculated automatically.
+                        </div>
+                        <!-- Add Food Item Section -->
+                        <div class="mb-4">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label for="food-search" class="form-label">Search Food</label>
+                                    <div class="position-relative">
+                                        <input type="text" class="form-control food-search-input" id="food-search"
+                                               placeholder="Search for food items...">
+                                        <div class="suggestions-dropdown" id="food-suggestions"></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="food-quantity" class="form-label">Quantity (g)</label>
+                                    <input type="number" class="form-control" id="food-quantity" 
+                                           step="0.1" placeholder="100">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">&nbsp;</label>
+                                    <button type="button" class="btn btn-success w-100" onclick="addFoodItem()" id="add-item-btn">
+                                        <i class="bi bi-plus-circle"></i> Add Item
+                                    </button>
+                                </div>
+                            </div>
+
+
+                        </div>
+                        
+                        <!-- Food Items List -->
+                        <div id="food-items-list">
+                            <div class="text-center text-muted py-4" id="no-items-message">
+                                <i class="bi bi-plus-circle fs-1"></i>
+                                <h6>No food items added yet</h6>
+                                <p class="mb-2">Search for food items above and click "Add Item" to build your meal container.</p>
+                                <small class="text-muted">
+                                    💡 Tip: Type at least 2 characters to see food suggestions
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column - Nutrition Preview -->
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="bi bi-pie-chart"></i> Nutrition Preview</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="nutrition-preview">
+                            <div class="macro-display calories-display">
+                                <div class="fs-4 fw-bold" id="total-calories">0</div>
+                                <small>Total Calories</small>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-4">
+                                    <div class="macro-display carbs-display">
+                                        <div class="fw-bold" id="total-carbs">0g</div>
+                                        <small>Carbs</small>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="macro-display fats-display">
+                                        <div class="fw-bold" id="total-fats">0g</div>
+                                        <small>Fats</small>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="macro-display proteins-display">
+                                        <div class="fw-bold" id="total-proteins">0g</div>
+                                        <small>Proteins</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <small class="text-muted">
+                                <i class="bi bi-info-circle"></i>
+                                Nutrition values are calculated automatically as you add food items.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Quick Actions -->
+                <div class="card mt-3">
+                    <div class="card-header bg-secondary text-white">
+                        <h6 class="mb-0"><i class="bi bi-lightning-fill"></i> Quick Actions</h6>
+                    </div>
+                    <div class="card-body p-2">
+                        <div class="d-grid gap-2">
+                            <a href="{{ url_for('meal_containers') }}" class="btn btn-outline-secondary btn-sm">
+                                <i class="bi bi-arrow-left"></i> Back to Containers
+                            </a>
+                            <a href="{{ url_for('food_search') }}" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-search"></i> Food Database
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="row mt-4">
+            <div class="col-12 text-center">
+
+                <button type="submit" class="btn btn-primary btn-lg me-3" id="save-container-btn">
+                    <i class="bi bi-check-circle"></i> Save Container
+                </button>
+                <a href="{{ url_for('meal_containers') }}" class="btn btn-outline-secondary btn-lg">
+                    <i class="bi bi-x-circle"></i> Cancel
+                </a>
+            </div>
+        </div>
+        
+        <!-- Hidden inputs for food items -->
+        <div id="hidden-inputs">
+            <!-- Default nutrition values -->
+            <input type="hidden" name="total_calories" value="0" id="hidden-calories">
+            <input type="hidden" name="total_carbs" value="0" id="hidden-carbs">
+            <input type="hidden" name="total_fats" value="0" id="hidden-fats">
+            <input type="hidden" name="total_proteins" value="0" id="hidden-proteins">
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let foodItems = [];
+    let selectedFood = null;
+
+    // Fallback food data for when API is not available
+    const fallbackFoods = [
+        {
+            id: 'fallback_1',
+            name: 'Apple',
+            brand: 'Fresh',
+            calories_per_100g: 52,
+            carbs_per_100g: 14,
+            fats_per_100g: 0.2,
+            proteins_per_100g: 0.3,
+            serving_size_g: 100,
+            category: 'Fruits'
+        },
+        {
+            id: 'fallback_2',
+            name: 'Banana',
+            brand: 'Fresh',
+            calories_per_100g: 89,
+            carbs_per_100g: 23,
+            fats_per_100g: 0.3,
+            proteins_per_100g: 1.1,
+            serving_size_g: 100,
+            category: 'Fruits'
+        },
+        {
+            id: 'fallback_3',
+            name: 'Chicken Breast',
+            brand: 'Fresh',
+            calories_per_100g: 165,
+            carbs_per_100g: 0,
+            fats_per_100g: 3.6,
+            proteins_per_100g: 31,
+            serving_size_g: 100,
+            category: 'Meat'
+        },
+        {
+            id: 'fallback_4',
+            name: 'White Rice',
+            brand: 'Cooked',
+            calories_per_100g: 130,
+            carbs_per_100g: 28,
+            fats_per_100g: 0.3,
+            proteins_per_100g: 2.7,
+            serving_size_g: 100,
+            category: 'Grains'
+        }
+    ];
+
+    // Meal type selection
+    document.addEventListener('DOMContentLoaded', function() {
+        const mealTypeOptions = document.querySelectorAll('.meal-type-option');
+        const mealTypeInput = document.getElementById('meal_type');
+        
+        mealTypeOptions.forEach(option => {
+            option.addEventListener('click', function() {
+                // Remove selection from all options
+                mealTypeOptions.forEach(opt => opt.classList.remove('selected'));
+                
+                // Add selection to clicked option
+                this.classList.add('selected');
+                
+                // Update hidden input
+                mealTypeInput.value = this.dataset.value;
+            });
+        });
+        
+        // Set default selection
+        document.querySelector('[data-value="meal"]').classList.add('selected');
+    });
+    
+    // Food search functionality
+    let searchTimeout;
+    document.getElementById('food-search').addEventListener('input', function() {
+        const query = this.value.trim();
+        
+        clearTimeout(searchTimeout);
+        
+        if (query.length < 2) {
+            document.getElementById('food-suggestions').style.display = 'none';
+            return;
+        }
+        
+        searchTimeout = setTimeout(() => {
+            searchFoods(query);
+        }, 300);
+    });
+    
+    function searchFoods(query) {
+        console.log('Searching for:', query);
+        fetch(`/eating/api/food_search?q=${encodeURIComponent(query)}`, {
+            method: 'GET',
+            credentials: 'same-origin',  // Include session cookies
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        })
+            .then(response => {
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+
+                if (response.status === 401 || response.status === 403) {
+                    throw new Error('Authentication required. Please refresh the page and try again.');
+                }
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                // Check if response is JSON
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    throw new Error('Server returned non-JSON response. Please check if you are logged in.');
+                }
+
+                return response.json();
+            })
+            .then(data => {
+                console.log('Search results:', data);
+                displayFoodSuggestions(data.foods || []);
+            })
+            .catch(error => {
+                console.error('Error searching foods:', error);
+                console.log('Falling back to local food data');
+
+                // Use fallback food data
+                const filteredFoods = fallbackFoods.filter(food =>
+                    food.name.toLowerCase().includes(query.toLowerCase())
+                );
+
+                if (filteredFoods.length > 0) {
+                    displayFoodSuggestions(filteredFoods);
+                } else {
+                    // Show user-friendly message
+                    const suggestionsDiv = document.getElementById('food-suggestions');
+                    let errorMessage = 'No matching foods found. ';
+
+                    if (error.message.includes('Authentication')) {
+                        errorMessage += 'API unavailable - using basic food database.';
+                    } else if (error.message.includes('non-JSON')) {
+                        errorMessage += 'API unavailable - using basic food database.';
+                    } else {
+                        errorMessage += 'Try a different search term.';
+                    }
+
+                    suggestionsDiv.innerHTML = `<div class="p-2 text-warning">${errorMessage}</div>`;
+                    suggestionsDiv.style.display = 'block';
+                }
+            });
+    }
+    
+    function displayFoodSuggestions(foods) {
+        const suggestionsDiv = document.getElementById('food-suggestions');
+        
+        if (foods.length === 0) {
+            suggestionsDiv.style.display = 'none';
+            return;
+        }
+        
+        suggestionsDiv.innerHTML = '';
+        
+        foods.forEach(food => {
+            const suggestion = document.createElement('div');
+            suggestion.className = 'food-suggestion';
+            suggestion.innerHTML = `
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <strong>${food.name}</strong>
+                        ${food.brand ? `<small class="text-muted d-block">${food.brand}</small>` : ''}
+                    </div>
+                    <small>${food.calories_per_100g} cal/100g</small>
+                </div>
+            `;
+            
+            suggestion.addEventListener('click', function() {
+                selectFood(food);
+            });
+            
+            suggestionsDiv.appendChild(suggestion);
+        });
+        
+        suggestionsDiv.style.display = 'block';
+    }
+    
+    function selectFood(food) {
+        selectedFood = food;
+        document.getElementById('food-search').value = food.name;
+        document.getElementById('food-suggestions').style.display = 'none';
+        document.getElementById('food-quantity').focus();
+    }
+    
+    function addFoodItem() {
+        try {
+            const foodName = document.getElementById('food-search').value.trim();
+            const quantity = parseFloat(document.getElementById('food-quantity').value);
+
+        if (!foodName) {
+            alert('Please enter a food name');
+            return;
+        }
+
+        if (!quantity || quantity <= 0) {
+            alert('Please enter a valid quantity');
+            return;
+        }
+
+        let nutrition = { calories: 0, carbs: 0, fats: 0, proteins: 0 };
+        let foodId = null;
+
+        if (selectedFood) {
+            // Use selected food from search
+            const factor = quantity / 100;
+            nutrition = {
+                calories: selectedFood.calories_per_100g * factor,
+                carbs: selectedFood.carbs_per_100g * factor,
+                fats: selectedFood.fats_per_100g * factor,
+                proteins: selectedFood.proteins_per_100g * factor
+            };
+            foodId = selectedFood.id;
+        } else {
+            // Try to find food in fallback data
+            const fallbackFood = fallbackFoods.find(food =>
+                food.name.toLowerCase().includes(foodName.toLowerCase())
+            );
+
+            if (fallbackFood) {
+                const factor = quantity / 100;
+                nutrition = {
+                    calories: fallbackFood.calories_per_100g * factor,
+                    carbs: fallbackFood.carbs_per_100g * factor,
+                    fats: fallbackFood.fats_per_100g * factor,
+                    proteins: fallbackFood.proteins_per_100g * factor
+                };
+                foodId = fallbackFood.id;
+            } else {
+                // Manual entry - ask user for basic nutrition info
+                const calories = prompt(`Enter calories per 100g for "${foodName}" (or 0 if unknown):`);
+                if (calories !== null) {
+                    const caloriesNum = parseFloat(calories) || 0;
+                    const factor = quantity / 100;
+                    nutrition.calories = caloriesNum * factor;
+                }
+            }
+        }
+
+        // Add to food items array
+        const foodItem = {
+            id: foodId,
+            name: selectedFood ? selectedFood.name : foodName,
+            quantity: quantity,
+            nutrition: nutrition
+        };
+
+        foodItems.push(foodItem);
+
+        // Update display
+        updateFoodItemsList();
+        updateNutritionPreview();
+        updateHiddenInputs();
+
+        // Clear form
+        try {
+            const searchInput = document.getElementById('food-search');
+            const quantityInput = document.getElementById('food-quantity');
+            const suggestionsDiv = document.getElementById('food-suggestions');
+
+            if (searchInput) searchInput.value = '';
+            if (quantityInput) quantityInput.value = '';
+            if (suggestionsDiv) suggestionsDiv.style.display = 'none';
+
+            selectedFood = null;
+
+        } catch (error) {
+            console.error('Error clearing form:', error);
+        }
+        } catch (error) {
+            console.error('Error adding food item:', error);
+            alert('Error adding food item. Please try again.');
+        }
+    }
+    
+    function removeFoodItem(index) {
+        if (index >= 0 && index < foodItems.length) {
+            foodItems.splice(index, 1);
+
+            updateFoodItemsList();
+            updateNutritionPreview();
+            updateHiddenInputs();
+        }
+    }
+    
+    function updateFoodItemsList() {
+        const listDiv = document.getElementById('food-items-list');
+        const noItemsMessage = document.getElementById('no-items-message');
+
+        // Check if elements exist
+        if (!listDiv) {
+            console.error('food-items-list element not found');
+            return;
+        }
+        if (!noItemsMessage) {
+            console.error('no-items-message element not found');
+            return;
+        }
+
+        if (foodItems.length === 0) {
+            noItemsMessage.style.display = 'block';
+            // Clear any existing food items
+            const existingItems = listDiv.querySelectorAll('.food-item-row');
+            existingItems.forEach(item => item.remove());
+            return;
+        }
+
+        noItemsMessage.style.display = 'none';
+
+        let html = '';
+        foodItems.forEach((item, index) => {
+            html += `
+                <div class="food-item-row mb-3 p-3 border rounded">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6 class="mb-1">${item.name}</h6>
+                                    <small class="text-muted">${item.quantity}g</small>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="row text-center">
+                                        <div class="col-3">
+                                            <div class="fw-bold">${Math.round(item.nutrition.calories)}</div>
+                                            <small>cal</small>
+                                        </div>
+                                        <div class="col-3">
+                                            <div class="fw-bold">${item.nutrition.carbs.toFixed(1)}</div>
+                                            <small>C</small>
+                                        </div>
+                                        <div class="col-3">
+                                            <div class="fw-bold">${item.nutrition.fats.toFixed(1)}</div>
+                                            <small>F</small>
+                                        </div>
+                                        <div class="col-3">
+                                            <div class="fw-bold">${item.nutrition.proteins.toFixed(1)}</div>
+                                            <small>P</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-danger ms-2" onclick="removeFoodItem(${index})" title="Remove item">
+                            <i class="bi bi-x-circle"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+
+        // Clear existing food items first
+        const existingItems = listDiv.querySelectorAll('.food-item-row');
+        existingItems.forEach(item => item.remove());
+
+        // Add the no-items-message back if it was removed, then hide it
+        if (!listDiv.querySelector('#no-items-message')) {
+            const noItemsHtml = `
+                <div class="text-center text-muted py-4" id="no-items-message" style="display: none;">
+                    <i class="bi bi-plus-circle fs-1"></i>
+                    <h6>No food items added yet</h6>
+                    <p class="mb-2">Search for food items above and click "Add Item" to build your meal container.</p>
+                    <small class="text-muted">
+                        💡 Tip: Type at least 2 characters to see food suggestions
+                    </small>
+                </div>
+            `;
+            listDiv.insertAdjacentHTML('afterbegin', noItemsHtml);
+        }
+
+        // Add new food items
+        listDiv.insertAdjacentHTML('beforeend', html);
+    }
+    
+    function updateNutritionPreview() {
+        const totals = foodItems.reduce((acc, item) => {
+            if (item.nutrition) {
+                acc.calories += item.nutrition.calories || 0;
+                acc.carbs += item.nutrition.carbs || 0;
+                acc.fats += item.nutrition.fats || 0;
+                acc.proteins += item.nutrition.proteins || 0;
+            }
+            return acc;
+        }, { calories: 0, carbs: 0, fats: 0, proteins: 0 });
+
+        // Update display elements
+        const caloriesElement = document.getElementById('total-calories');
+        const carbsElement = document.getElementById('total-carbs');
+        const fatsElement = document.getElementById('total-fats');
+        const proteinsElement = document.getElementById('total-proteins');
+
+        if (caloriesElement) caloriesElement.textContent = Math.round(totals.calories);
+        if (carbsElement) carbsElement.textContent = totals.carbs.toFixed(1) + 'g';
+        if (fatsElement) fatsElement.textContent = totals.fats.toFixed(1) + 'g';
+        if (proteinsElement) proteinsElement.textContent = totals.proteins.toFixed(1) + 'g';
+    }
+    
+    function updateHiddenInputs() {
+        // Calculate total nutrition values
+        const totals = foodItems.reduce((acc, item) => {
+            acc.calories += item.nutrition.calories;
+            acc.carbs += item.nutrition.carbs;
+            acc.fats += item.nutrition.fats;
+            acc.proteins += item.nutrition.proteins;
+            return acc;
+        }, { calories: 0, carbs: 0, fats: 0, proteins: 0 });
+
+        // Update existing hidden inputs
+        document.getElementById('hidden-calories').value = totals.calories;
+        document.getElementById('hidden-carbs').value = totals.carbs;
+        document.getElementById('hidden-fats').value = totals.fats;
+        document.getElementById('hidden-proteins').value = totals.proteins;
+
+        // Create food items data object for backend
+        const foodItemsData = {};
+        foodItems.forEach((item, index) => {
+            foodItemsData[index] = {
+                food_id: item.id || '',
+                quantity: item.quantity
+            };
+        });
+
+        // Update or create the food_items_data hidden input
+        let foodItemsDataInput = document.getElementById('food-items-data-input');
+        if (!foodItemsDataInput) {
+            foodItemsDataInput = document.createElement('input');
+            foodItemsDataInput.type = 'hidden';
+            foodItemsDataInput.name = 'food_items_data';
+            foodItemsDataInput.id = 'food-items-data-input';
+            document.getElementById('hidden-inputs').appendChild(foodItemsDataInput);
+        }
+        foodItemsDataInput.value = JSON.stringify(foodItemsData);
+
+        console.log('Updated food items data:', foodItemsData);
+    }
+    
+    // Hide suggestions when clicking outside
+    document.addEventListener('click', function(event) {
+        if (!event.target.closest('.position-relative')) {
+            document.getElementById('food-suggestions').style.display = 'none';
+        }
+    });
+
+    // Initialize hidden inputs on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        updateHiddenInputs();
+        updateNutritionPreview();
+    });
+
+
+
+</script>
+{% endblock %}
