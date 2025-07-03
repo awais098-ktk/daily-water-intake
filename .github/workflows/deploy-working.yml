@@ -1,0 +1,44 @@
+name: ✅ WORKING Azure Deploy
+
+on:
+  workflow_dispatch:  # Manual trigger only
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Python 3.11
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Install only Flask (no complex dependencies)
+      run: |
+        pip install Flask==3.1.0 gunicorn==22.0.0
+    
+    - name: Create minimal deployment package
+      run: |
+        # Create requirements-deploy.txt with only essential packages
+        echo "Flask==3.1.0" > requirements-deploy.txt
+        echo "gunicorn==22.0.0" >> requirements-deploy.txt
+        
+        # Package only essential files
+        zip -r app.zip water_tracker/ requirements-deploy.txt runtime.txt startup.sh web.config
+    
+    - name: Login to Azure
+      uses: azure/login@v2
+      with:
+        client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_F85A5BCF6BB94A1893CD0838AF6A8D92 }}
+        tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_4998FB765BC14D8A822AE74BBFA61405 }}
+        subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_CAB0862DB3354AD8B35E84AE9513C225 }}
+
+    - name: Deploy to Azure
+      uses: azure/webapps-deploy@v3
+      with:
+        app-name: 'Dailywaterintake'
+        slot-name: 'Production'
+        package: app.zip

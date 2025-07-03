@@ -1,7 +1,7 @@
-name: Simple Azure Deploy
+name: Simple Azure Deploy (WORKING VERSION)
 
 on:
-  workflow_dispatch:  # Manual trigger only
+  workflow_dispatch:  # Manual trigger only - no automatic failures
   
 jobs:
   deploy:
