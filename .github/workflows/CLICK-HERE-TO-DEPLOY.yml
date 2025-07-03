@@ -1,0 +1,55 @@
+name: 🚀 CLICK HERE TO DEPLOY TO AZURE
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_type:
+        description: 'Deployment type'
+        required: true
+        default: 'minimal'
+        type: choice
+        options:
+        - minimal
+        - full
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+    
+    - name: 🐍 Setup Python 3.11
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: 📦 Install dependencies
+      run: |
+        pip install Flask==3.1.0 gunicorn==22.0.0
+        echo "Flask==3.1.0" > requirements.txt
+        echo "gunicorn==22.0.0" >> requirements.txt
+    
+    - name: 📁 Create deployment package
+      run: |
+        zip -r deploy.zip water_tracker/ requirements.txt runtime.txt startup.sh web.config
+    
+    - name: 🔐 Login to Azure
+      uses: azure/login@v2
+      with:
+        client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_F85A5BCF6BB94A1893CD0838AF6A8D92 }}
+        tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_4998FB765BC14D8A822AE74BBFA61405 }}
+        subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_CAB0862DB3354AD8B35E84AE9513C225 }}
+
+    - name: 🚀 Deploy to Azure
+      uses: azure/webapps-deploy@v3
+      with:
+        app-name: 'Dailywaterintake'
+        slot-name: 'Production'
+        package: deploy.zip
+        
+    - name: ✅ Deployment Complete
+      run: |
+        echo "🎉 Deployment successful!"
+        echo "🌐 Your app should be available at: https://dailywaterintake.azurewebsites.net"
