@@ -18,6 +18,14 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full history to ensure latest files
+
+      - name: Verify requirements.txt content
+        run: |
+          echo "=== Current requirements.txt content ==="
+          cat requirements.txt
+          echo "========================================"
 
       - name: Set up Python version
         uses: actions/setup-python@v5
@@ -33,7 +41,7 @@ jobs:
       - name: Install dependencies
         run: |
           source venv/bin/activate
-          pip install --no-cache-dir -r requirements.txt
+          pip install --no-cache-dir -r requirements-minimal.txt
 
       - name: Test application startup
         run: |
