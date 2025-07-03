@@ -1,47 +1,100 @@
-# Ultra-simple Azure deployment workflow
+# Complete Azure deployment workflow for production use
 name: Deploy to Azure Web App - Dailywaterintake
 
 on:
-  workflow_dispatch:  # Manual trigger only to avoid automatic failures
+  push:
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 📥 Checkout repository
+      uses: actions/checkout@v4
+
+    - name: 🐍 Set up Python 3.11
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: ⚡ Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('requirements-minimal.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: 📦 Install dependencies
+      run: |
+        python -m pip install --upgrade pip setuptools wheel
+        pip install -r requirements-minimal.txt
+
+    - name: 🧪 Test basic imports
+      run: |
+        python -c "
+        import flask
+        import flask_sqlalchemy
+        import flask_login
+        print('✅ All core dependencies working!')
+        "
+
+    - name: 📁 Create deployment artifact
+      run: |
+        # Create requirements.txt for Azure
+        cp requirements-minimal.txt requirements.txt
+
+        # Create deployment package
+        zip -r python-app.zip . \
+          -x "*.git*" "*venv*" "*__pycache__*" "*.pyc" \
+          -x "*test*" "*.md" ".gitignore" \
+          -x "requirements-azure.txt" "requirements-deploy.txt"
+
+    - name: 📤 Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: python-app
+        path: python-app.zip
+
   deploy:
     runs-on: ubuntu-latest
+    needs: build
+    environment: production
     permissions:
       id-token: write
       contents: read
 
     steps:
-      - uses: actions/checkout@v4
+    - name: 📥 Download artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: python-app
 
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
+    - name: 🔐 Login to Azure
+      uses: azure/login@v2
+      with:
+        client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_F85A5BCF6BB94A1893CD0838AF6A8D92 }}
+        tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_4998FB765BC14D8A822AE74BBFA61405 }}
+        subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_CAB0862DB3354AD8B35E84AE9513C225 }}
 
-      - name: Install minimal dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install Flask==3.1.0 Flask-SQLAlchemy==3.1.1 Flask-Login==0.6.3 gunicorn==22.0.0
+    - name: 🚀 Deploy to Azure Web App
+      id: deploy-to-webapp
+      uses: azure/webapps-deploy@v3
+      with:
+        app-name: 'Dailywaterintake'
+        slot-name: 'Production'
+        package: python-app.zip
 
-      - name: Create deployment package
-        run: |
-          # Create a clean deployment package
-          zip -r deploy.zip . -x "*.git*" "*venv*" "*__pycache__*" "*.pyc" "*test*"
-
-      - name: Login to Azure
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_F85A5BCF6BB94A1893CD0838AF6A8D92 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_4998FB765BC14D8A822AE74BBFA61405 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_CAB0862DB3354AD8B35E84AE9513C225 }}
-
-      - name: Deploy to Azure Web App
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: 'Dailywaterintake'
-          slot-name: 'Production'
-          package: deploy.zip
+    - name: 🎉 Deployment Success
+      run: |
+        echo "🎉 Deployment completed successfully!"
+        echo "🌐 App URL: https://dailywaterintake.azurewebsites.net"
+        echo "📋 Next steps:"
+        echo "  1. Configure environment variables in Azure Portal"
+        echo "  2. Set up Google Fit API credentials"
+        echo "  3. Test the application"
 
 
           
