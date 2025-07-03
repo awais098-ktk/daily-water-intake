@@ -10,13 +10,16 @@ export FLASK_ENV=production
 # Create instance directory if it doesn't exist
 mkdir -p instance
 
-# Initialize database if needed
+# Initialize database if needed (with error handling)
 python -c "
-from water_tracker.app import app, db
-with app.app_context():
-    db.create_all()
-    print('Database initialized successfully')
-"
+try:
+    from water_tracker.app import app, db
+    with app.app_context():
+        db.create_all()
+        print('Database initialized successfully')
+except Exception as e:
+    print(f'Database initialization skipped: {e}')
+" || echo "Database initialization failed, continuing anyway..."
 
 # Start the application with Gunicorn
 echo "Starting Gunicorn server..."
