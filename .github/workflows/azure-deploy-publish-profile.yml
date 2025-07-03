@@ -1,0 +1,75 @@
+name: 🔄 Azure Deploy (Publish Profile Method)
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+        - production
+        - staging
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: 🐍 Set up Python 3.11
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: 📦 Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements-minimal.txt
+    
+    - name: 🧪 Quick test
+      run: |
+        python -c "
+        import flask
+        import flask_sqlalchemy
+        import flask_login
+        print('✅ All dependencies working!')
+        "
+    
+    - name: 📁 Prepare deployment files
+      run: |
+        # Copy minimal requirements for Azure
+        cp requirements-minimal.txt requirements.txt
+        
+        # Ensure startup script is executable
+        chmod +x startup.sh
+        
+        # List files being deployed
+        echo "Files to be deployed:"
+        ls -la
+    
+    - name: 🚀 Deploy to Azure Web App
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: 'Dailywaterintake'
+        slot-name: 'Production'
+        publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_DAILYWATERINTAKE }}
+        package: .
+    
+    - name: 🎉 Deployment Complete
+      run: |
+        echo "🎉 Deployment completed successfully!"
+        echo "🌐 Your app is available at: https://dailywaterintake.azurewebsites.net"
+        echo ""
+        echo "📋 Next steps:"
+        echo "1. Visit your app URL to verify it's working"
+        echo "2. Configure environment variables in Azure Portal:"
+        echo "   - GOOGLE_FIT_CLIENT_ID"
+        echo "   - GOOGLE_FIT_CLIENT_SECRET"
+        echo "   - GOOGLE_FIT_REDIRECT_URI"
+        echo "3. Test Google Fit integration"
+        echo ""
+        echo "📖 For detailed configuration, see DEPLOYMENT-GUIDE.md"

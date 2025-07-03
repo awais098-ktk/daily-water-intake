@@ -1,0 +1,96 @@
+name: 🔍 Debug Azure Connection
+
+on:
+  workflow_dispatch:
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: 🔍 Check Azure secrets
+      run: |
+        echo "=== Azure Secrets Debug ==="
+        echo "Client ID secret exists: ${{ secrets.AZUREAPPSERVICE_CLIENTID_F85A5BCF6BB94A1893CD0838AF6A8D92 != '' }}"
+        echo "Tenant ID secret exists: ${{ secrets.AZUREAPPSERVICE_TENANTID_4998FB765BC14D8A822AE74BBFA61405 != '' }}"
+        echo "Subscription ID secret exists: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_CAB0862DB3354AD8B35E84AE9513C225 != '' }}"
+        echo "Publish Profile secret exists: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_DAILYWATERINTAKE != '' }}"
+        echo ""
+        
+        if [ "${{ secrets.AZUREAPPSERVICE_CLIENTID_F85A5BCF6BB94A1893CD0838AF6A8D92 }}" = "" ]; then
+          echo "❌ Client ID secret is missing!"
+        else
+          echo "✅ Client ID secret is configured"
+        fi
+        
+        if [ "${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_DAILYWATERINTAKE }}" = "" ]; then
+          echo "❌ Publish Profile secret is missing!"
+        else
+          echo "✅ Publish Profile secret is configured"
+        fi
+    
+    - name: 🔍 Check repository files
+      run: |
+        echo "=== Repository Files Debug ==="
+        echo "Current directory: $(pwd)"
+        echo "Files in root:"
+        ls -la
+        echo ""
+        echo "Water tracker directory exists: $(test -d water_tracker && echo 'YES' || echo 'NO')"
+        echo "Requirements files:"
+        ls -la requirements*.txt 2>/dev/null || echo "No requirements files found"
+        echo ""
+        echo "Azure config files:"
+        ls -la runtime.txt startup.sh web.config 2>/dev/null || echo "Some Azure config files missing"
+    
+    - name: 🐍 Test Python setup
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: 🧪 Test dependencies
+      run: |
+        echo "=== Python Dependencies Test ==="
+        python --version
+        pip --version
+        
+        echo "Installing minimal dependencies..."
+        pip install Flask==3.1.0 Flask-SQLAlchemy==3.1.1 Flask-Login==0.6.3 gunicorn==22.0.0
+        
+        echo "Testing imports..."
+        python -c "
+        try:
+            import flask
+            import flask_sqlalchemy
+            import flask_login
+            import gunicorn
+            print('✅ All core dependencies working!')
+        except Exception as e:
+            print(f'❌ Import error: {e}')
+            exit(1)
+        "
+    
+    - name: 📋 Recommendations
+      run: |
+        echo "=== Troubleshooting Recommendations ==="
+        echo ""
+        echo "If Azure secrets are missing:"
+        echo "1. Go to Azure Portal → App Service → Deployment Center"
+        echo "2. Download publish profile"
+        echo "3. Add as GitHub secret: AZUREAPPSERVICE_PUBLISHPROFILE_DAILYWATERINTAKE"
+        echo ""
+        echo "Alternative: Use publish profile method"
+        echo "1. Run workflow: '🔄 Azure Deploy (Publish Profile Method)'"
+        echo "2. This method is often more reliable than service principal"
+        echo ""
+        echo "If files are missing:"
+        echo "1. Ensure all required files are committed to repository"
+        echo "2. Check .gitignore doesn't exclude necessary files"
+        echo ""
+        echo "Next steps:"
+        echo "1. Fix any issues identified above"
+        echo "2. Try the publish profile deployment method"
+        echo "3. If still failing, check Azure App Service logs"
