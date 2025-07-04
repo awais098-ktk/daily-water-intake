@@ -1,2 +1,2 @@
 #!/bin/bash
-gunicorn --bind=0.0.0.0:8000 water_tracker.app:app
+exec gunicorn --bind=0.0.0.0:8000 --workers=1 water_tracker.app:app
