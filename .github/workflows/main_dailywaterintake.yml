@@ -23,14 +23,14 @@ jobs:
       uses: actions/cache@v3
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('requirements-minimal.txt') }}
+        key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-
 
     - name: 📦 Install dependencies
       run: |
         python -m pip install --upgrade pip setuptools wheel
-        pip install -r requirements-minimal.txt
+        pip install -r requirements.txt
 
     - name: 🧪 Test basic imports
       run: |
@@ -38,14 +38,12 @@ jobs:
         import flask
         import flask_sqlalchemy
         import flask_login
-        print('✅ All core dependencies working!')
+        from PIL import Image
+        print('✅ All core dependencies including Pillow working!')
         "
 
     - name: 📁 Create deployment artifact
       run: |
-        # Create requirements.txt for Azure
-        cp requirements-minimal.txt requirements.txt
-
         # Create deployment package
         zip -r python-app.zip . \
           -x "*.git*" "*venv*" "*__pycache__*" "*.pyc" \
