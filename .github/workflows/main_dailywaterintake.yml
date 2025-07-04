@@ -88,7 +88,6 @@ jobs:
       uses: azure/webapps-deploy@v3
       with:
         app-name: 'Dailywaterintake'
-        slot-name: 'Production'
         package: python-app.zip
 
     - name: 🎉 Deployment Success
@@ -99,6 +98,3 @@ jobs:
         echo "  1. Configure environment variables in Azure Portal"
         echo "  2. Set up Google Fit API credentials"
         echo "  3. Test the application"
-
-
-          
