@@ -26,30 +26,40 @@ def init_oauth_manager(app_config):
 
 def get_wearable_models():
     """Get the wearable models from the main app"""
-    from flask import current_app
+    try:
+        # Import models directly from the main app module
+        import sys
+        import os
 
-    # Get the database instance from the current app
-    db = current_app.extensions['sqlalchemy']
+        # Add the parent directory to sys.path if not already there
+        parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        if parent_dir not in sys.path:
+            sys.path.insert(0, parent_dir)
 
-    # Get all registered models from SQLAlchemy
-    models = db.Model.registry._class_registry
+        # Import the models from the main app
+        from water_tracker.app import WearableConnection, ActivityData, HydrationRecommendation, db
 
-    WearableConnection = models.get('WearableConnection')
-    ActivityData = models.get('ActivityData')
-    HydrationRecommendation = models.get('HydrationRecommendation')
+        return WearableConnection, ActivityData, HydrationRecommendation, db
 
-    # If not found, they might be registered with different names
-    if not WearableConnection:
-        for name, model in models.items():
-            if hasattr(model, '__tablename__'):
-                if model.__tablename__ == 'wearable_connections':
-                    WearableConnection = model
-                elif model.__tablename__ == 'activity_data':
-                    ActivityData = model
-                elif model.__tablename__ == 'hydration_recommendations':
-                    HydrationRecommendation = model
+    except ImportError as e:
+        # Fallback method if direct import fails
+        from flask import current_app
 
-    return WearableConnection, ActivityData, HydrationRecommendation, db
+        # Get the database instance from the current app
+        db = current_app.extensions['sqlalchemy']
+
+        # Try to get models from the current app context
+        try:
+            # Access models through the app context
+            with current_app.app_context():
+                from water_tracker.app import WearableConnection, ActivityData, HydrationRecommendation
+                return WearableConnection, ActivityData, HydrationRecommendation, db
+        except Exception as fallback_error:
+            # Last resort - create a simple error response
+            raise Exception(f"Could not access database models: {str(e)}, fallback failed: {str(fallback_error)}")
+
+    except Exception as e:
+        raise Exception(f"Critical error accessing models: {str(e)}")
 
 @wearable_bp.route('/')
 @login_required
@@ -283,6 +293,27 @@ def disconnect(connection_id):
 
     flash(f'{connection.platform.title()} disconnected successfully', 'success')
     return redirect(url_for('wearable.index'))
+
+@wearable_bp.route('/test_models')
+@login_required
+def test_models():
+    """Test if models are accessible"""
+    try:
+        WearableConnection, ActivityData, HydrationRecommendation, db = get_wearable_models()
+        return jsonify({
+            'success': True,
+            'models': {
+                'WearableConnection': str(WearableConnection),
+                'ActivityData': str(ActivityData),
+                'HydrationRecommendation': str(HydrationRecommendation),
+                'db': str(db)
+            }
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 @wearable_bp.route('/debug')
 @login_required
@@ -529,8 +560,12 @@ def sync_connection(connection) -> dict:
     try:
         print(f"🔄 Starting sync for {connection.platform} (ID: {connection.id})")
 
-        # Get models
-        WearableConnection, ActivityData, HydrationRecommendation, db = get_wearable_models()
+        # Get models with error handling
+        try:
+            WearableConnection, ActivityData, HydrationRecommendation, db = get_wearable_models()
+        except Exception as model_error:
+            print(f"❌ Failed to get models: {str(model_error)}")
+            return {'success': False, 'error': f'Database model access failed: {str(model_error)}', 'platform': connection.platform}
 
         # Check if token needs refresh
         if connection.token_expires_at and connection.refresh_token and oauth_manager:
