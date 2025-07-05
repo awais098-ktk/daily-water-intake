@@ -92,14 +92,26 @@ app.config['OPENWEATHERMAP_API_KEY'] = os.environ.get('OPENWEATHERMAP_API_KEY', 
 
 # OAuth Configuration for Wearable Integration
 # Google Fit OAuth credentials
-app.config['GOOGLE_FIT_CLIENT_ID'] = os.environ.get('GOOGLE_FIT_CLIENT_ID', 'YOUR_GOOGLE_CLIENT_ID_HERE')
-app.config['GOOGLE_FIT_CLIENT_SECRET'] = os.environ.get('GOOGLE_FIT_CLIENT_SECRET', 'YOUR_GOOGLE_CLIENT_SECRET_HERE')
+app.config['GOOGLE_FIT_CLIENT_ID'] = os.environ.get('GOOGLE_FIT_CLIENT_ID')
+app.config['GOOGLE_FIT_CLIENT_SECRET'] = os.environ.get('GOOGLE_FIT_CLIENT_SECRET')
 app.config['FITBIT_CLIENT_ID'] = os.environ.get('FITBIT_CLIENT_ID', '')
 app.config['FITBIT_CLIENT_SECRET'] = os.environ.get('FITBIT_CLIENT_SECRET', '')
 
 # OAuth Redirect URIs (must match registered URIs in OAuth apps)
-app.config['GOOGLE_FIT_REDIRECT_URI'] = os.environ.get('GOOGLE_FIT_REDIRECT_URI', 'http://127.0.0.1:5001/wearable/oauth/google_fit/callback')
-app.config['FITBIT_REDIRECT_URI'] = os.environ.get('FITBIT_REDIRECT_URI', 'http://127.0.0.1:5001/wearable/oauth/fitbit/callback')
+# Auto-detect production vs local environment
+if os.environ.get('WEBSITE_HOSTNAME'):  # Azure App Service sets this
+    app.config['GOOGLE_FIT_REDIRECT_URI'] = f"https://{os.environ.get('WEBSITE_HOSTNAME')}/wearable/oauth/google_fit/callback"
+    app.config['FITBIT_REDIRECT_URI'] = f"https://{os.environ.get('WEBSITE_HOSTNAME')}/wearable/oauth/fitbit/callback"
+else:
+    app.config['GOOGLE_FIT_REDIRECT_URI'] = os.environ.get('GOOGLE_FIT_REDIRECT_URI', 'http://127.0.0.1:5001/wearable/oauth/google_fit/callback')
+    app.config['FITBIT_REDIRECT_URI'] = os.environ.get('FITBIT_REDIRECT_URI', 'http://127.0.0.1:5001/wearable/oauth/fitbit/callback')
+
+# Debug OAuth configuration (remove in production)
+print("🔧 OAuth Configuration Debug:")
+print(f"GOOGLE_FIT_CLIENT_ID: {'✅ SET' if app.config.get('GOOGLE_FIT_CLIENT_ID') else '❌ MISSING'}")
+print(f"GOOGLE_FIT_CLIENT_SECRET: {'✅ SET' if app.config.get('GOOGLE_FIT_CLIENT_SECRET') else '❌ MISSING'}")
+print(f"GOOGLE_FIT_REDIRECT_URI: {app.config.get('GOOGLE_FIT_REDIRECT_URI')}")
+print(f"Environment: {'🌐 PRODUCTION' if os.environ.get('WEBSITE_HOSTNAME') else '💻 LOCAL'}")
 
 # File upload configuration
 app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static/uploads')
