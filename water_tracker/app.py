@@ -734,19 +734,6 @@ def login():
         username = request.form.get('username')
         password = request.form.get('password')
 
-        # Check for demo login
-        if username == "demo" and password == "demo123":
-            # Find or create demo user
-            demo_user = db.session.execute(db.select(User).filter_by(username="demo")).scalar_one_or_none()
-            if not demo_user:
-                # Create demo user with all required fields
-                create_demo_user()
-                demo_user = db.session.execute(db.select(User).filter_by(username="demo")).scalar_one_or_none()
-
-            login_user(demo_user, remember=True)  # Remember demo user too
-            flash('Logged in as demo user!', 'success')
-            return redirect(url_for('dashboard'))
-
         # Regular login
         user = db.session.execute(db.select(User).filter_by(username=username)).scalar_one_or_none()
 
