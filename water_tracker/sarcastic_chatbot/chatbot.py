@@ -21,7 +21,80 @@ class SarcasticChatbot:
     """
     
     def __init__(self):
-        """Initialize the sarcastic chatbot with personality responses."""
+        """Initialize the sarcastic chatbot with personality responses and app knowledge."""
+        # App features knowledge base
+        self.app_features = {
+            'water_tracking': {
+                'description': 'Track your daily water intake with multiple logging methods',
+                'features': [
+                    'Manual water logging with custom amounts',
+                    'Quick-add buttons for common container sizes',
+                    'Voice recognition for hands-free logging',
+                    'OCR (camera) to scan water bottles and containers',
+                    'Daily progress tracking with visual charts',
+                    'Customizable daily hydration goals'
+                ]
+            },
+            'google_fit': {
+                'description': 'Connect with Google Fit to sync activity data and get personalized hydration recommendations',
+                'features': [
+                    'Automatic activity data sync from Google Fit',
+                    'Steps, distance, and calories tracking',
+                    'Activity-based hydration recommendations',
+                    'Automatic token refresh for seamless sync',
+                    'Historical activity data import'
+                ]
+            },
+            'containers': {
+                'description': 'Manage your water containers and bottles for accurate tracking',
+                'features': [
+                    'Add custom containers with specific volumes',
+                    'Set default containers for quick logging',
+                    'Container history and usage tracking',
+                    'Quick-select from favorite containers'
+                ]
+            },
+            'dashboard': {
+                'description': 'Comprehensive overview of your hydration progress and health data',
+                'features': [
+                    'Real-time hydration progress with visual indicators',
+                    'Daily, weekly, and monthly progress charts',
+                    'Activity data integration from wearables',
+                    'Weather-based hydration recommendations',
+                    'Achievement badges and milestones'
+                ]
+            },
+            'chatbot': {
+                'description': 'AI-powered hydration assistant (that\'s me!) to help and guide you',
+                'features': [
+                    'Natural language water intake logging',
+                    'Personalized hydration advice and reminders',
+                    'App feature explanations and help',
+                    'Sarcastic but helpful personality',
+                    'Voice and text interaction support'
+                ]
+            },
+            'voice_ocr': {
+                'description': 'Advanced input methods for convenient water logging',
+                'features': [
+                    'Voice recognition: "I drank 500ml" or "Add 2 glasses"',
+                    'Camera OCR: Scan water bottles to detect volume',
+                    'Smart text recognition from bottle labels',
+                    'Hands-free operation for busy lifestyles'
+                ]
+            },
+            'analytics': {
+                'description': 'Detailed insights into your hydration patterns and health',
+                'features': [
+                    'Hydration trend analysis over time',
+                    'Activity correlation with water intake',
+                    'Goal achievement statistics',
+                    'Weekly and monthly progress reports',
+                    'Personalized recommendations based on patterns'
+                ]
+            }
+        }
+
         self.personality_responses = {
             'greeting': [
                 "Oh look, someone remembered they need water to survive! How revolutionary.",
@@ -99,6 +172,37 @@ class SarcasticChatbot:
                 "I'm sorry, I don't speak 'confused human'. Try again with clearer instructions.",
                 "Error detected: Your input. Please try again with something that makes sense.",
                 "I'm a chatbot, not a mind reader. Be more specific, please."
+            ],
+            'help_general': [
+                "Oh, you need help? How surprising! I can explain any app feature - just ask about 'water tracking', 'Google Fit', 'containers', 'dashboard', 'voice commands', or 'OCR scanning'.",
+                "Lost already? Typical! Ask me about specific features like 'How do I track water?', 'What is Google Fit?', or 'How to use voice commands?'",
+                "Need a tour guide for your own hydration app? I can explain water tracking, Google Fit sync, container management, dashboard features, and more. Just ask!",
+                "Confused about how to stay hydrated? Revolutionary! Ask me about any feature: water logging, activity sync, voice commands, camera scanning, or dashboard analytics."
+            ],
+            'feature_explanation': [
+                "Here's what {feature_name} does: {description}\n\nKey features:\n{features_list}\n\nNow stop being confused and start using it!",
+                "Oh, you want to know about {feature_name}? Fine! {description}\n\nWhat it includes:\n{features_list}\n\nThere, I've done your homework for you.",
+                "Let me educate you about {feature_name}: {description}\n\nFeatures you should actually use:\n{features_list}\n\nYou're welcome for the free lesson!"
+            ],
+            'how_to_water': [
+                "Seriously? You need instructions on drinking water? Fine! You can log water by typing amounts like '500ml' or 'I drank 2 glasses', use the dashboard buttons, speak to me with voice commands, or scan bottles with your camera. Revolutionary concepts, I know.",
+                "Water tracking for beginners: Type how much you drank, click the quick-add buttons, use voice commands, or scan containers with OCR. It's almost like the app was designed for this!",
+                "Let me spell it out: Manual entry (type amounts), Quick buttons (dashboard), Voice commands ('I drank 300ml'), or Camera scanning (point and shoot). Pick your favorite method of basic human survival."
+            ],
+            'how_to_google_fit': [
+                "Google Fit integration? Finally, some ambition! Go to the wearable connection page, click 'Connect Google Fit', authorize the app, and boom - your activity data syncs automatically. Your phone does the thinking so you don't have to!",
+                "Want Google Fit sync? Navigate to wearable connections, connect your Google account, and let the magic happen. Your steps, activities, and calories will sync automatically. Technology is amazing when you actually use it!",
+                "Google Fit setup: Wearable page → Connect Google Fit → Authorize → Automatic sync. Your activity data helps me give better hydration recommendations. You're welcome for the personalized service!"
+            ],
+            'how_to_voice': [
+                "Voice commands? Look at you being all futuristic! Just say things like 'I drank 500ml', 'Add 2 glasses', or 'Log 1 bottle'. The app listens and logs automatically. It's like having a personal assistant, except I'm sarcastic.",
+                "Voice logging is simple even for you: Speak naturally like 'I had 300ml' or 'Add one glass'. The app understands and logs it. Finally, technology that works with your lazy lifestyle!",
+                "Voice commands for the speech-enabled: Say your water intake naturally - '500ml', '2 cups', 'one bottle'. The app converts speech to logs. It's like magic, but with more hydration!"
+            ],
+            'how_to_ocr': [
+                "Camera scanning? Fancy! Point your camera at water bottles, containers, or labels. The OCR reads the volume automatically and logs it. It's like having X-ray vision, but for hydration tracking!",
+                "OCR scanning for the visually inclined: Camera → Point at container → Automatic volume detection → Instant logging. The app reads what you're too lazy to type. Brilliant!",
+                "Scan containers with your camera and let the app do the reading. Point, shoot, and the volume gets detected automatically. It's almost like the future, but for water tracking!"
             ]
         }
         
@@ -211,23 +315,75 @@ class SarcasticChatbot:
             # If formatting fails, return a generic response
             return random.choice(self.personality_responses['error'])
 
+    def get_feature_explanation(self, feature_key: str) -> str:
+        """Get detailed explanation of an app feature."""
+        if feature_key not in self.app_features:
+            return "I don't know about that feature. Try asking about 'water tracking', 'Google Fit', 'containers', 'dashboard', 'voice commands', or 'OCR scanning'."
+
+        feature = self.app_features[feature_key]
+        features_list = '\n'.join([f"• {feature}" for feature in feature['features']])
+
+        return self.generate_response('feature_explanation',
+            feature_name=feature_key.replace('_', ' ').title(),
+            description=feature['description'],
+            features_list=features_list
+        )
+
     def process_user_input(self, text: str, current_intake: int, daily_goal: int) -> Dict:
         """
         Process user input and generate appropriate response.
-        
+
         Args:
             text: User input text
             current_intake: Current daily water intake in ml
             daily_goal: Daily hydration goal in ml
-            
+
         Returns:
             Dictionary with response and any extracted data
         """
         logger.info(f"Processing user input: '{text}' (current: {current_intake}ml, goal: {daily_goal}ml)")
-        
+
+        text_lower = text.lower()
+
+        # Check for help requests
+        help_keywords = ['help', 'how', 'what', 'explain', 'guide', 'tutorial', 'features']
+        if any(keyword in text_lower for keyword in help_keywords):
+            # Check for specific feature help
+            if 'water' in text_lower and ('track' in text_lower or 'log' in text_lower):
+                response = self.generate_response('how_to_water')
+                return {'response': response, 'action': 'help', 'extracted_intake': None}
+            elif 'google fit' in text_lower or 'google' in text_lower:
+                response = self.generate_response('how_to_google_fit')
+                return {'response': response, 'action': 'help', 'extracted_intake': None}
+            elif 'voice' in text_lower:
+                response = self.generate_response('how_to_voice')
+                return {'response': response, 'action': 'help', 'extracted_intake': None}
+            elif 'ocr' in text_lower or 'camera' in text_lower or 'scan' in text_lower:
+                response = self.generate_response('how_to_ocr')
+                return {'response': response, 'action': 'help', 'extracted_intake': None}
+            elif 'container' in text_lower:
+                response = self.get_feature_explanation('containers')
+                return {'response': response, 'action': 'help', 'extracted_intake': None}
+            elif 'dashboard' in text_lower:
+                response = self.get_feature_explanation('dashboard')
+                return {'response': response, 'action': 'help', 'extracted_intake': None}
+            elif 'feature' in text_lower:
+                response = self.generate_response('help_general')
+                return {'response': response, 'action': 'help', 'extracted_intake': None}
+            else:
+                response = self.generate_response('help_general')
+                return {'response': response, 'action': 'help', 'extracted_intake': None}
+
+        # Check for specific feature questions
+        for feature_key in self.app_features.keys():
+            feature_name = feature_key.replace('_', ' ')
+            if feature_name in text_lower or feature_key in text_lower:
+                response = self.get_feature_explanation(feature_key)
+                return {'response': response, 'action': 'feature_info', 'extracted_intake': None}
+
         # Check for greeting
         greetings = ['hello', 'hi', 'hey', 'start', 'begin']
-        if any(greeting in text.lower() for greeting in greetings):
+        if any(greeting in text_lower for greeting in greetings):
             response = self.generate_response('greeting')
             return {
                 'response': response,
