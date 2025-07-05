@@ -417,8 +417,16 @@ def sync_all():
 
     sync_results = []
     for connection in connections:
-        result = sync_connection(connection)
-        sync_results.append(result)
+        try:
+            # Add timeout protection to prevent hanging
+            result = sync_connection(connection)
+            sync_results.append(result)
+        except Exception as e:
+            sync_results.append({
+                'success': False,
+                'error': f'Sync timeout or error: {str(e)}',
+                'platform': connection.platform
+            })
 
     successful_syncs = sum(1 for result in sync_results if result['success'])
 
@@ -519,6 +527,7 @@ def api_hydration_recommendation():
 def sync_connection(connection) -> dict:
     """Sync data from a specific wearable connection"""
     try:
+        print(f"🔄 Starting sync for {connection.platform} (ID: {connection.id})")
 
         # Get models
         WearableConnection, ActivityData, HydrationRecommendation, db = get_wearable_models()

@@ -80,10 +80,17 @@ except ImportError as e:
 
 # Create Flask app
 app = Flask(__name__)
-app.config['SECRET_KEY'] = secrets.token_hex(16)  # Generate a secure random key
+# Use a consistent secret key for session persistence
+app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'water-tracker-secret-key-2025')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///water_tracker.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['WTF_CSRF_ENABLED'] = True  # Enable CSRF protection
+
+# Session configuration for better persistence
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)  # Sessions last 7 days
+app.config['SESSION_COOKIE_SECURE'] = os.environ.get('WEBSITE_HOSTNAME') is not None  # HTTPS in production
+app.config['SESSION_COOKIE_HTTPONLY'] = True  # Prevent XSS
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # CSRF protection
 
 
 
@@ -736,7 +743,7 @@ def login():
                 create_demo_user()
                 demo_user = db.session.execute(db.select(User).filter_by(username="demo")).scalar_one_or_none()
 
-            login_user(demo_user)
+            login_user(demo_user, remember=True)  # Remember demo user too
             flash('Logged in as demo user!', 'success')
             return redirect(url_for('dashboard'))
 
@@ -744,7 +751,7 @@ def login():
         user = db.session.execute(db.select(User).filter_by(username=username)).scalar_one_or_none()
 
         if user and user.check_password(password):
-            login_user(user)
+            login_user(user, remember=True)  # Remember user for persistent sessions
             next_page = request.args.get('next')
             return redirect(next_page or url_for('dashboard'))
         else:
