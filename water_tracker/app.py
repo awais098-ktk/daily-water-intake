@@ -100,9 +100,10 @@ app.config['FITBIT_CLIENT_SECRET'] = os.environ.get('FITBIT_CLIENT_SECRET', '')
 # OAuth Redirect URIs (must match registered URIs in OAuth apps)
 # Check if running in Azure production environment
 if os.environ.get('WEBSITE_HOSTNAME'):  # Azure App Service sets this
-    # Use the exact Azure domain for production
-    app.config['GOOGLE_FIT_REDIRECT_URI'] = 'https://dailywaterintake.azurewebsites.net/wearable/oauth/google_fit/callback'
-    app.config['FITBIT_REDIRECT_URI'] = 'https://dailywaterintake.azurewebsites.net/wearable/oauth/fitbit/callback'
+    # Use the actual Azure hostname from environment
+    azure_hostname = os.environ.get('WEBSITE_HOSTNAME')
+    app.config['GOOGLE_FIT_REDIRECT_URI'] = f'https://{azure_hostname}/wearable/oauth/google_fit/callback'
+    app.config['FITBIT_REDIRECT_URI'] = f'https://{azure_hostname}/wearable/oauth/fitbit/callback'
 else:
     # Local development
     app.config['GOOGLE_FIT_REDIRECT_URI'] = os.environ.get('GOOGLE_FIT_REDIRECT_URI', 'http://127.0.0.1:5001/wearable/oauth/google_fit/callback')
@@ -113,6 +114,7 @@ print("🔧 OAuth Configuration Debug:")
 print(f"GOOGLE_FIT_CLIENT_ID: {'✅ SET' if app.config.get('GOOGLE_FIT_CLIENT_ID') else '❌ MISSING'}")
 print(f"GOOGLE_FIT_CLIENT_SECRET: {'✅ SET' if app.config.get('GOOGLE_FIT_CLIENT_SECRET') else '❌ MISSING'}")
 print(f"GOOGLE_FIT_REDIRECT_URI: {app.config.get('GOOGLE_FIT_REDIRECT_URI')}")
+print(f"WEBSITE_HOSTNAME: {os.environ.get('WEBSITE_HOSTNAME', 'Not set (local)')}")
 print(f"Environment: {'🌐 PRODUCTION' if os.environ.get('WEBSITE_HOSTNAME') else '💻 LOCAL'}")
 
 # File upload configuration
