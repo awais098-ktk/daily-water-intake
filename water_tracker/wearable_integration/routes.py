@@ -635,11 +635,19 @@ def sync_connection(connection) -> dict:
             if not connection_test:
                 return {'success': False, 'error': 'Failed to connect to API after token refresh attempt', 'platform': connection.platform}
 
-        # Sync last 7 days of data
+        # Sync last 7 days of data with timeout protection
         sync_count = 0
         today = date.today()
+        max_sync_time = 20  # Maximum total sync time in seconds
+        sync_start_time = datetime.now()
 
         for i in range(7):
+            # Check if we've exceeded maximum sync time
+            elapsed_time = (datetime.now() - sync_start_time).total_seconds()
+            if elapsed_time > max_sync_time:
+                print(f"⏰ Sync timeout reached ({elapsed_time:.1f}s), stopping sync")
+                break
+
             sync_date = today - timedelta(days=i)
 
             try:

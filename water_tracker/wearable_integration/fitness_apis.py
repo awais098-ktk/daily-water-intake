@@ -53,7 +53,13 @@ class GoogleFitAPI(BaseFitnessAPI):
             print(f"Testing Google Fit connection to: {url}")
             print(f"Access token (first 20 chars): {self.access_token[:20]}...")
 
-            response = requests.get(url, headers=self.headers, timeout=10)
+            # Use shorter timeout for connection test
+            response = requests.get(
+                url,
+                headers=self.headers,
+                timeout=(2, 3),  # (connection_timeout, read_timeout)
+                stream=False
+            )
             print(f"Google Fit connection test response: {response.status_code}")
 
             if response.status_code != 200:
@@ -222,7 +228,13 @@ class GoogleFitAPI(BaseFitnessAPI):
             url = f"{self.base_url}/dataSources/{data_source}/datasets/{start_time * 1000000}-{end_time * 1000000}"
             logger.info(f"Making request to Google Fit API: {url}")
 
-            response = requests.get(url, headers=self.headers, timeout=10)
+            # Use shorter timeout and add connection timeout
+            response = requests.get(
+                url,
+                headers=self.headers,
+                timeout=(3, 5),  # (connection_timeout, read_timeout)
+                stream=False
+            )
             logger.info(f"Google Fit API response status: {response.status_code}")
 
             if response.status_code == 200:
@@ -237,6 +249,12 @@ class GoogleFitAPI(BaseFitnessAPI):
                 logger.warning(f"Response content: {response.text[:500]}")
                 return []
 
+        except requests.exceptions.Timeout as e:
+            logger.error(f"Timeout getting data from {data_source}: {e}")
+            return []
+        except requests.exceptions.ConnectionError as e:
+            logger.error(f"Connection error getting data from {data_source}: {e}")
+            return []
         except Exception as e:
             logger.error(f"Error getting data from Google Fit data source {data_source}: {e}")
             import traceback
