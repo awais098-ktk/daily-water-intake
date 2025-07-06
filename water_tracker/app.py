@@ -659,6 +659,12 @@ def index():
         return redirect(url_for('dashboard'))
     return render_template('index.html')
 
+@app.route('/privacy-policy')
+def privacy_policy():
+    """Privacy policy page for OAuth verification."""
+    from datetime import datetime
+    return render_template('privacy_policy.html', current_date=datetime.now().strftime("%B %Y"))
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if current_user.is_authenticated:
