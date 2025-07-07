@@ -547,6 +547,7 @@
 <!-- Hidden inputs for reminder settings -->
 <input type="hidden" id="reminderEnabled" value="{{ current_user.reminder_enabled }}">
 <input type="hidden" id="reminderInterval" value="{{ current_user.reminder_interval }}">
+<input type="hidden" id="userDailyGoal" value="{{ current_user.daily_goal or 2000 }}">
 
 <script src="{{ url_for('static', filename='js/reminder.js') }}"></script>
 <script src="{{ url_for('static', filename='js/dynamic-logo.js') }}"></script>
@@ -620,8 +621,8 @@
       const humidity = data.main?.humidity || 60;
       const weatherCondition = data.weather?.[0]?.description || 'clear sky';
 
-      // Base hydration
-      const baseHydration = 2000; // Default to 2000ml
+      // Base hydration - use user's actual daily goal
+      const baseHydration = {{ current_user.daily_goal or 2000 }};
 
       // Calculate adjustments based on weather
       let tempAdjustment = 0;

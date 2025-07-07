@@ -468,7 +468,8 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Calculating hydration recommendation directly');
 
             // Get base hydration from user profile or use default
-            const baseHydration = 2000; // Default to 2000ml
+            const userDailyGoalEl = document.getElementById('userDailyGoal');
+            const baseHydration = userDailyGoalEl ? parseInt(userDailyGoalEl.value) : 2000;
 
             // Get weather data from the response
             const temperature = weatherData.main?.temp || 25;
