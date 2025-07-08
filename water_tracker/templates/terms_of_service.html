@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}Terms of Service - HydroMate{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h1 class="card-title mb-4">Terms of Service</h1>
+                    <p class="text-muted">Last updated: {{ current_date }}</p>
+                    
+                    <div class="terms-content">
+                        <h3>1. Acceptance of Terms</h3>
+                        <p>By accessing and using HydroMate ("the Service"), you accept and agree to be bound by the terms and provision of this agreement.</p>
+                        
+                        <h3>2. Description of Service</h3>
+                        <p>HydroMate is a water intake tracking application that helps users monitor their daily hydration goals. The Service includes:</p>
+                        <ul>
+                            <li>Daily water intake logging and tracking</li>
+                            <li>Hydration goal setting and progress monitoring</li>
+                            <li>Integration with Google Fit for activity-based recommendations</li>
+                            <li>Weather-based hydration suggestions</li>
+                            <li>Personalized hydration reminders</li>
+                            <li>Progress analytics and reporting</li>
+                        </ul>
+                        
+                        <h3>3. User Accounts</h3>
+                        <p>To use certain features of the Service, you must register for an account. You agree to:</p>
+                        <ul>
+                            <li>Provide accurate and complete registration information</li>
+                            <li>Maintain the security of your password and account</li>
+                            <li>Accept responsibility for all activities under your account</li>
+                            <li>Notify us immediately of any unauthorized use</li>
+                        </ul>
+                        
+                        <h3>4. Privacy and Data Protection</h3>
+                        <p>Your privacy is important to us. Please review our <a href="{{ url_for('privacy_policy') }}" class="text-primary">Privacy Policy</a>, which also governs your use of the Service, to understand our practices.</p>
+                        
+                        <h3>5. Google Fit Integration</h3>
+                        <p>When you connect Google Fit to HydroMate:</p>
+                        <ul>
+                            <li>You authorize us to access your fitness data for hydration recommendations</li>
+                            <li>You can revoke this access at any time through app settings</li>
+                            <li>We only access data necessary for providing hydration insights</li>
+                            <li>Your Google account credentials are never stored by our service</li>
+                        </ul>
+                        
+                        <h3>6. Acceptable Use</h3>
+                        <p>You agree not to use the Service to:</p>
+                        <ul>
+                            <li>Violate any applicable laws or regulations</li>
+                            <li>Transmit harmful, offensive, or inappropriate content</li>
+                            <li>Interfere with or disrupt the Service or servers</li>
+                            <li>Attempt to gain unauthorized access to any part of the Service</li>
+                            <li>Use the Service for any commercial purpose without permission</li>
+                        </ul>
+                        
+                        <h3>7. Health Disclaimer</h3>
+                        <p><strong>Important:</strong> HydroMate is for informational purposes only and is not intended as medical advice. The hydration recommendations provided are general suggestions based on activity and weather data. Always consult with healthcare professionals for personalized medical advice regarding hydration and health.</p>
+                        
+                        <h3>8. Service Availability</h3>
+                        <p>We strive to maintain the Service's availability but cannot guarantee uninterrupted access. The Service may be temporarily unavailable due to maintenance, updates, or technical issues.</p>
+                        
+                        <h3>9. Intellectual Property</h3>
+                        <p>The Service and its original content, features, and functionality are owned by HydroMate and are protected by international copyright, trademark, and other intellectual property laws.</p>
+                        
+                        <h3>10. Limitation of Liability</h3>
+                        <p>HydroMate shall not be liable for any indirect, incidental, special, consequential, or punitive damages resulting from your use of the Service.</p>
+                        
+                        <h3>11. Termination</h3>
+                        <p>We may terminate or suspend your account and access to the Service immediately, without prior notice, for conduct that we believe violates these Terms of Service.</p>
+                        
+                        <h3>12. Changes to Terms</h3>
+                        <p>We reserve the right to modify these terms at any time. We will notify users of any material changes through the Service or email.</p>
+                        
+                        <h3>13. Contact Information</h3>
+                        <p>If you have questions about these Terms of Service, please contact us:</p>
+                        <ul>
+                            <li><strong>App:</strong> Use the in-app chatbot or contact form</li>
+                            <li><strong>GitHub:</strong> <a href="https://github.com/awais098-ktk/daily-water-intake" class="text-primary">https://github.com/awais098-ktk/daily-water-intake</a></li>
+                        </ul>
+                        
+                        <div class="alert alert-info mt-4">
+                            <h5>Agreement</h5>
+                            <p class="mb-0">By using HydroMate, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service and our Privacy Policy.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.terms-content h3 {
+    color: #2c3e50;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 0.5rem;
+}
+
+.terms-content ul {
+    margin-bottom: 1.5rem;
+}
+
+.terms-content li {
+    margin-bottom: 0.5rem;
+}
+
+.terms-content p {
+    line-height: 1.6;
+    margin-bottom: 1rem;
+}
+</style>
+{% endblock %}

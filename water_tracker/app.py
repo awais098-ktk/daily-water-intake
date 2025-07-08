@@ -665,6 +665,12 @@ def privacy_policy():
     from datetime import datetime
     return render_template('privacy_policy.html', current_date=datetime.now().strftime("%B %Y"))
 
+@app.route('/terms-of-service')
+def terms_of_service():
+    """Terms of service page for OAuth verification."""
+    from datetime import datetime
+    return render_template('terms_of_service.html', current_date=datetime.now().strftime("%B %Y"))
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if current_user.is_authenticated:

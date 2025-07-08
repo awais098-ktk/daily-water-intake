@@ -32,6 +32,26 @@
                 <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg me-2">Register</a>
                 <a href="{{ url_for('login') }}" class="btn btn-outline-primary btn-lg">Login</a>
             </div>
+
+            <!-- Privacy Policy and Terms Links for OAuth Verification -->
+            <div class="mt-5 pt-4 border-top">
+                <div class="row">
+                    <div class="col-12">
+                        <h6 class="text-muted mb-3">Legal Information</h6>
+                        <div class="d-flex justify-content-center gap-4 flex-wrap">
+                            <a href="{{ url_for('privacy_policy') }}" class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-shield-alt me-1"></i>Privacy Policy
+                            </a>
+                            <a href="{{ url_for('terms_of_service') }}" class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-file-contract me-1"></i>Terms of Service
+                            </a>
+                        </div>
+                        <p class="text-muted small mt-2">
+                            By using HydroMate, you agree to our Terms of Service and Privacy Policy
+                        </p>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
