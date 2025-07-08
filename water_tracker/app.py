@@ -671,6 +671,11 @@ def terms_of_service():
     from datetime import datetime
     return render_template('terms_of_service.html', current_date=datetime.now().strftime("%B %Y"))
 
+@app.route('/google3c9f1d3dd140ef49.html')
+def google_verification():
+    """Google Search Console verification file."""
+    return "google-site-verification: google3c9f1d3dd140ef49.html"
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if current_user.is_authenticated:
