@@ -668,8 +668,11 @@ def privacy_policy():
 @app.route('/terms-of-service')
 def terms_of_service():
     """Terms of service page for OAuth verification."""
-    from datetime import datetime
-    return render_template('terms_of_service.html', current_date=datetime.now().strftime("%B %Y"))
+    try:
+        from datetime import datetime
+        return render_template('terms_of_service.html', current_date=datetime.now().strftime("%B %Y"))
+    except Exception as e:
+        return f"Terms of Service route is working! Error: {str(e)}", 200
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
